@@ -24,9 +24,6 @@ class Api_Controller extends Controller {
 	 */
 	public function index()
 	{
-		// Disables CSRF validation for API requests
-		Validation::$is_api_request = TRUE;
-
 		// Instantiate the API service
 		$api_service = new Api_Service();
 
@@ -35,27 +32,17 @@ class Api_Controller extends Controller {
 
 		// Avoid caching
 		header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-		header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
+		header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the pas
 
-		$resp = '';
-		
-		if ($api_service->get_response_type() == 'jsonp')
-		{
-			header("Content-type: application/json; charset=utf-8");
-			$resp = $_GET['callback'].'('.$api_service->get_response().')';
-		}
-		elseif ($api_service->get_response_type() == 'xml')
+		if ($api_service->get_response_type() == 'xml')
 		{
 			header("Content-type: text/xml");    
-			$resp = $api_service->get_response();
 		}
 		else
 		{
 			header("Content-type: application/json; charset=utf-8");
-			$resp =  $api_service->get_response();
 		}
 
-		print $resp;
-
+		print $api_service->get_response();
 	}
 }

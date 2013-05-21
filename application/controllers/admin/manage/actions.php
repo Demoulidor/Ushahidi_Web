@@ -22,7 +22,7 @@ class Actions_Controller extends Admin_Controller
 		$this->template->this_page = 'actions';
 
 		// If user doesn't have access, redirect to dashboard
-		if ( ! $this->auth->has_permission("manage"))
+		if ( ! admin::permissions($this->user, "manage"))
 		{
 			url::redirect(url::site().'admin/dashboard');
 		}
@@ -31,21 +31,21 @@ class Actions_Controller extends Admin_Controller
 
 	function index()
 	{
-		$this->template->content = new View('admin/manage/actions/main');
+		$this->template->content = new View('admin/actions');
 		$this->template->content->title = Kohana::lang('ui_admin.actions');
 
-		$this->themes->map_enabled = TRUE;
-		$this->themes->treeview_enabled = TRUE;
+		$this->template->map_enabled = TRUE;
+		$this->template->treeview_enabled = TRUE;
 
-		$this->themes->js = new View('admin/manage/actions/actions_js');
-		$this->themes->js->default_map = Kohana::config('settings.default_map');
-		$this->themes->js->default_zoom = Kohana::config('settings.default_zoom');
-		$this->themes->js->latitude = Kohana::config('settings.default_lat');
-		$this->themes->js->longitude = Kohana::config('settings.default_lon');
+		$this->template->js = new View('admin/actions_js');
+		$this->template->js->default_map = Kohana::config('settings.default_map');
+		$this->template->js->default_zoom = Kohana::config('settings.default_zoom');
+		$this->template->js->latitude = Kohana::config('settings.default_lat');
+		$this->template->js->longitude = Kohana::config('settings.default_lon');
 
 		// TODO: Figure out what to do with this
-		$this->themes->js->incident_zoom = array();
-		$this->themes->js->geometries = array();
+		$this->template->js->incident_zoom = array();
+		$this->template->js->geometries = array();
 
 		$trigger_options = $this->_trigger_options();
 		$response_options = $this->_response_options();
@@ -56,7 +56,8 @@ class Actions_Controller extends Admin_Controller
 		$trigger_allowed_responses = $this->_trigger_allowed_responses();
 
 		// Setup and initialize form field names
-		$form = array(
+		$form = array
+	    (
 			'geometry' => '',
 			'action_trigger' => '',
 			'action_user' => '',
@@ -79,19 +80,19 @@ class Actions_Controller extends Admin_Controller
 			'action_add_category' => array(),
 			'action_verify' => '',
 			'action_badge' => ''
-			);
-			
-		// Process form submission
-		if ($_POST)
+	    );
+
+	    // Process form submission
+	    if ($_POST)
 		{
 			$post = Validation::factory($_POST);
 
 			// Trim all of the fields to get rid of errant spaces
-			$post->pre_filter('trim', TRUE);
-			
-			$expected_qualifier_fields = $trigger_advanced_options[$post['action_trigger']];
-			$expected_response_fields = $response_advanced_options[$post['action_response']];
-			$expected_fileds = array_merge($expected_qualifier_fields,$expected_response_fields);
+	        $post->pre_filter('trim', TRUE);
+
+	        $expected_qualifier_fields = $trigger_advanced_options[$post['action_trigger']];
+	        $expected_response_fields = $response_advanced_options[$post['action_response']];
+	        $expected_fileds = array_merge($expected_qualifier_fields,$expected_response_fields);
 
 			// Since our form is dynamic, we need to set validation dynamically
 			foreach($expected_fileds as $field)
@@ -198,7 +199,7 @@ class Actions_Controller extends Admin_Controller
 
 				$response_vars = serialize($response_vars);
 
-				$action = ORM::factory('actions', $post->id);
+				$action = ORM::factory('actions');
 				$action->action = $post->action_trigger;
 				$action->qualifiers = $qualifiers;
 				$action->response = $post->action_response;
@@ -240,11 +241,11 @@ class Actions_Controller extends Admin_Controller
 		// Build user options list
 		$this->template->content->user_options = $this->_user_options();
 
+		// Grab categories for category advanced options
+		$this->template->content->categories = Category_Model::get_categories();
+
 		// Grab badges for dropdown
 		$this->template->content->badges = Badge_Model::badge_names();
-
-		// Grab feeds for dropdown
-		$this->template->content->feeds = ORM::factory('feed')->find_all()->select_list('id','feed_name');
 
 		// Timezone
 		$this->template->content->site_timezone = Kohana::config('settings.site_timezone');
@@ -265,7 +266,7 @@ class Actions_Controller extends Admin_Controller
 		$this->template->content->errors = $errors;
 
 		// Enable date picker
-		$this->themes->datepicker_enabled = TRUE;
+		$this->template->datepicker_enabled = TRUE;
 	}
 
 	function changestate(){
@@ -276,22 +277,13 @@ class Actions_Controller extends Admin_Controller
 			// Trim all of the fields to get rid of errant spaces
 			$post->pre_filter('trim', TRUE);
 			$post->add_rules('action_id','required', 'digit');
-			$post->add_rules('action_switch_to','required');
+			$post->add_rules('action_switch_to','required', 'digit');
 
 			if( $post->validate())
 			{
-				if ($post->action_switch_to == 'de')
-				{
-					ORM::factory('actions',$post->action_id)->delete();
-				}
-				else
-				{
-					$active = (int)($post->action_switch_to);
-					
-					$action = ORM::factory('actions',$post->action_id);
-					$action->active = $active;
-					$action->save();
-				}
+				$action = ORM::factory('actions',$post->action_id);
+				$action->active = $post->action_switch_to;
+				$action->save();
 			}
 		}
 

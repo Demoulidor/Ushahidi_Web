@@ -53,7 +53,5 @@ $config['cdn_container'] = "";
 //
 $config['cdn_gradual_upgrade'] = false;
 
-// Avoid XSS problems with jwysiwyg in CDN environments.
-$config['cdn_ignore_jwysiwyg'] = true;
 
 ?>

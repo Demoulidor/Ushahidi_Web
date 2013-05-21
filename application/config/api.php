@@ -36,6 +36,9 @@
      // Incident count
      "incidentcount" => array("Incidents", "get_incident_count"),
      
+     // Api keys
+     "apikeys" => "Api_Keys",
+ 
      // Media tagging
      "tagnews" => "Tag_Media",
      "tagvideo" => "Tag_Media",

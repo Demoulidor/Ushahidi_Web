@@ -33,14 +33,6 @@ class Category_Model extends ORM_Tree {
 	protected $children = "category";
 	
 	/**
-	 * Default sort order
-	 * @var array
-	 */
-	protected $sorting = array("category_position" => "asc");
-	
-	protected static $categories;
-	
-	/**
 	 * Validates and optionally saves a category record from an array
 	 *
 	 * @param array $array Values to check
@@ -58,59 +50,14 @@ class Category_Model extends ORM_Tree {
 					->add_rules('category_color','required', 'length[6,6]');
 		
 		
-		// When creating a new category
-		if ( empty($this->id) )
-		{
-			// Set locale to current language
-			$this->locale = Kohana::config('locale.language.0');
-		}
-		
 		// Validation checks where parent_id > 0
 		if ($array->parent_id > 0)
 		{
-			$this_parent = self::factory('category')->find($array->parent_id);
-			
-			// If parent category is trusted/special
-			if ($this_parent->category_trusted == 1)
+			if ( ! empty($this->id) AND ($this->id == $array->parent_id))
 			{
-				Kohana::log('error', 'The parent id is a trusted category!');
-				$array->add_error('parent_id', 'parent_trusted');
-			}
-			
-			// When editing a category	
-			if ( ! empty($this->id))
-			{
-				$this_cat = self::factory('category')->find($this->id);
-				
-				// If this category is trusted/special, don't subcategorize
-				if ($this_cat->category_trusted)
-				{
-					Kohana::log('error', 'This is a special category');
-					$array->add_error('parent_id', 'special');
-				}
-				
-				// If parent category is trusted/special
-				if ($this_parent->category_trusted == 1)
-				{
-					Kohana::log('error', 'The parent id is a trusted category!');
-					$array->add_error('parent_id', 'parent_trusted');
-				}
-				
-				// If subcategories exist
-				$children = self::factory('category')->where('parent_id',$this->id)->count_all();
-				if ($children > 0 )
-				{
-					Kohana::log('error', 'This category has subcategories');
-					$array->add_error('parent_id', 'already_parent');
-				}
-				
-				// If parent and category id are the same
-				if ($this->id == $array->parent_id)
-				{
-					// Error
-					Kohana::log('error', 'The parent id and category id are the same!');
-					$array->add_error('parent_id', 'same');
-				}	
+				// Error
+				Kohana::log('error', 'The parent id and category id are the same!');
+				$array->add_error('parent_id', 'same');
 			}
 			else
 			{
@@ -130,30 +77,25 @@ class Category_Model extends ORM_Tree {
 	 * @param string $local Localization to use
 	 * @return array
 	 */
-	public static function categories($category_id = NULL)
+	public static function categories($category_id = NULL, $locale='en_US')
 	{
-		if (! isset(self::$categories))
+		$categories = (empty($category_id) OR ! self::is_valid_category($category_id))
+			? ORM::factory('category')->where('locale', $locale)->find_all()
+			: ORM::factory('category')->where('id', $category_id)->find_all();
+		
+		// To hold the return values
+		$cats = array();
+		
+		foreach($categories as $category)
 		{
-			$categories = ORM::factory('category')->find_all();
-			
-			self::$categories = array();
-			foreach($categories as $category)
-			{
-				self::$categories[$category->id]['category_id'] = $category->id;
-				self::$categories[$category->id]['category_title'] = $category->category_title;
-				self::$categories[$category->id]['category_description'] = $category->category_description;
-				self::$categories[$category->id]['category_color'] = $category->category_color;
-				self::$categories[$category->id]['category_image'] = $category->category_image;
-				self::$categories[$category->id]['category_image_thumb'] = $category->category_image_thumb;
-			}
+			$cats[$category->id]['category_id'] = $category->id;
+			$cats[$category->id]['category_title'] = $category->category_title;
+			$cats[$category->id]['category_color'] = $category->category_color;
+			$cats[$category->id]['category_image'] = $category->category_image;
+			$cats[$category->id]['category_image_thumb'] = $category->category_image_thumb;
 		}
 		
-		if ($category_id)
-		{
-			return isset(self::$categories[$category_id]) ? array($category_id => self::$categories[$category_id]) : FALSE;
-		}
-		
-		return self::$categories;
+		return $cats;
 	}
 
 	/**
@@ -177,113 +119,23 @@ class Category_Model extends ORM_Tree {
 	 * @param int $parent_id
 	 * @return ORM_Iterator
 	 */
-	public static function get_categories($parent_id = FALSE, $exclude_trusted = TRUE, $exclude_hidden = TRUE)
+	public static function get_categories($parent_id = 0, $exclude_trusted = TRUE)
 	{
-		
-		$where = array();
-		//a little hack to work around the way ORM handles table prefixes
-		//it seems that when you use "JOIN table_name as table_alias ON other_table.id = table_alias.id"
-		//with a database that uses prefixes, that ORM adds the prefix to "table_alias" so that you get
-		//"JOIN table_name as table_alias ON other_table.id = prefix_table_alias.id"
-		//so I added the the table prefix to the ORM code.
-		//This should be properly fixed by the good people at Kohana. Might even be fixed in Kohana 3.x
-		$table_prefix = Kohana::config('database.default.table_prefix');
-		$categories = ORM::factory('category')
-			->join('category AS '.$table_prefix.'c_parent','category.parent_id','c_parent.id','LEFT')
-				->orderby('category.parent_id', 'ASC')
-				->orderby('category.category_position', 'ASC')
-				->orderby('category.category_title', 'ASC');
-		
-		// Check if the parent is specified, if FALSE get everything
-		if ($parent_id !== FALSE)
-		{
-			// top level
-			if ($parent_id === 0)
-			{
-				$categories->where('category.parent_id', 0);
-			}
-			// valid parent
-			elseif (self::is_valid_category($parent_id))
-			{
-				$categories->where('category.parent_id', $parent_id);
-			}
-			// invalid parent
-			else
-			{
-				// Force no results, but still returning an ORM_Iterator
-				$categories->where('1 = 0');
-			}
-		}
+		// Check if the specified parent is valid
+		$where = (intval($parent_id) > 0 AND self::is_valid_category($parent_id))
+			? array('parent_id' => $parent_id)
+			: array('parent_id' => 0);
 			
 		// Make sure the category is visible
-		if ($exclude_hidden)
-		{
-			$categories->where('category.category_visible', '1');
-			$categories->where('(c_parent.category_visible = 1 OR c_parent.id IS NULL)');
-		}
+		$where = array_merge($where, array('category_visible' =>'1'));
 		
 		// Exclude trusted reports
 		if ($exclude_trusted)
 		{
-			$categories->where('category.category_trusted !=', '1');
+			$where = array_merge($where, array('category_title !=' => 'Trusted Reports'));
 		}
 		
-		return $categories->find_all();
+		// Return
+		return self::factory('category')->where($where)->orderby('category_title', 'ASC')->find_all();
 	}
-	
-	/**
-	 * Extend the default ORM save to also update matching Category_Lang record if it exits
-	 */
-	public function save()
-	{
-		parent::save();
-		
-		$table_prefix = Kohana::config('database.default.table_prefix');
-		
-		$this->db->query('UPDATE `'.$table_prefix.'category_lang` SET category_title = ?, category_description = ? WHERE category_id = ? AND locale = ?',
-			$this->category_title, $this->category_description, $this->id, $this->locale
-		);
-	}
-	
-	/**
-	 * Extend the default ORM delete to remove related records
-	 */
-	public function delete()
-	{
-		$table_prefix = Kohana::config('database.default.table_prefix');
-		
-		// Delete category_lang entries
-		ORM::factory('category_lang')
-			->where('category_id', $this->id)
-			->delete_all();
-		
-		// Update subcategories tied to this category and make them top level
-		$this->db->query(
-			'UPDATE `'.$table_prefix.'category` SET parent_id = 0 WHERE parent_id = :category_id',
-			array(':category_id' => $this->id)
-		);
-		
-		// Unapprove all reports tied to this category only (not to multiple categories)
-		$this->db->query(
-			'UPDATE `'.$table_prefix.'incident`
-				SET incident_active = 0
-				WHERE
-					id IN (SELECT incident_id FROM `'.$table_prefix.'incident_category` WHERE category_id = :category_id)
-				AND
-					id NOT IN (SELECT DISTINCT incident_id FROM `'.$table_prefix.'incident_category` WHERE category_id != :category_id)
-			',
-			array(':category_id' => $this->id)
-		);
-
-		// Delete all incident_category entries
-		$result = ORM::factory('incident_category')
-					->where('category_id',$this->id)
-					->delete_all();
-		
-		// @todo Delete the category image
-		
-		parent::delete();
-	}
-
-	
 }

@@ -47,11 +47,7 @@ class Distance_Core
 			// Safety check
 			if ($dist > 0)
 			{
-				$sqrt = sqrt(1 - $dist * $dist);
-				if($sqrt > 0)
-				{
-					$dist = $EARTH_RADIUS_MILES * (-1 * atan($dist / $sqrt) + M_PI / 2);
-				}
+				$dist = $EARTH_RADIUS_MILES * (-1 * atan($dist / sqrt(1 - $dist * $dist)) + M_PI / 2);
 			}
 		}
 		

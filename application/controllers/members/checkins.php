@@ -16,7 +16,7 @@
 
 class Checkins_Controller extends Members_Controller {
 	
-	public function __construct()
+	function __construct()
 	{
 		parent::__construct();
 
@@ -24,10 +24,10 @@ class Checkins_Controller extends Members_Controller {
 	}
 	
 	/**
-	 * Lists the checkins.
-	 * @param int $page
-	 */
-	public function index($page = 1)
+	* Lists the checkins.
+	* @param int $page
+	*/
+	function index($page = 1)
 	{
 		$this->template->content = new View('members/checkins');
 		$this->template->content->title = Kohana::lang('ui_admin.my_checkins');
@@ -57,7 +57,7 @@ class Checkins_Controller extends Members_Controller {
 						$update = ORM::factory('checkin')
 							->where('user_id', $this->user->id)
 							->find($item);
-						if ($update->loaded)
+						if ($update->loaded == true)
 						{
 							$checkin_id = $update->id;
 							$update->delete();
@@ -66,7 +66,7 @@ class Checkins_Controller extends Members_Controller {
 							ORM::factory('media')->where('checkin_id',$checkin_id)->delete_all();
 						}
 					}
-					$form_action = utf8::strtoupper(Kohana::lang('ui_admin.deleted'));
+					$form_action = strtoupper(Kohana::lang('ui_admin.deleted'));
 				}
 				$form_saved = TRUE;
 			}
@@ -100,7 +100,7 @@ class Checkins_Controller extends Members_Controller {
 		$this->template->content->total_items = $pagination->total_items;
 		
 		// Javascript Header
-		$this->themes->map_enabled = TRUE;
-		$this->themes->js = new View('members/checkins_js');
+		$this->template->map_enabled = TRUE;
+		$this->template->js = new View('members/checkins_js');
 	}	
 }

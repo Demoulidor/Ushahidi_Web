@@ -130,7 +130,7 @@ final class Event {
 	 */
 	public static function replace($name, $existing, $callback)
 	{
-		if (empty(self::$events[$name]) OR ($key = array_search($existing, self::$events[$name])) === FALSE)
+		if (empty(self::$events[$name]) OR ($key = array_search($existing, self::$events[$name], TRUE)) === FALSE)
 			return FALSE;
 
 		if ( ! in_array($callback, self::$events[$name], TRUE))

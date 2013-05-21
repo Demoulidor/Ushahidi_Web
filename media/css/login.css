@@ -80,36 +80,15 @@ dl {}
 	padding:5px;
 	vertical-align:top;
 }
-#password_reset_change_form {
-	border:3px solid #999;
-	text-align:left;
-	padding: 20px;
-	background-color: #ddd;
-	float:left;
-	width:704px;
-	margin-bottom:20px;
-}
 #openid_login_container{
 	margin:50px auto;
-	/*width:626px;*/
-	width:750px;
+	width:626px;
 }
 #openid_login {
 	border:3px solid #999;
-	padding: 20px;
-	background-color: #ddd;
-	float:left;
-	width:340px;
-	text-align:center;
-	margin-top:20px;
-}
-#create_account {
-	border:3px solid #999;
 	text-align:left;
 	padding: 20px;
 	background-color: #ddd;
-	float:right;
-	width:300px;
 }
 .login_text{
 	padding:3px 7px 3px 7px;
@@ -243,7 +222,6 @@ dl {}
 	background-color:#eee;
 	color:#990000;
 	font-weight:bold;
-	border:3px solid #999;
 }
 .login_success{
 	color:#336600;
@@ -275,10 +253,4 @@ html[xmlns] .clearfix {
 	margin-bottom:15px;
 	padding:10px;
 	background-color:#eee;
-}
-
-#resend_confirm_email, #signin_forgot, #signin_new { margin-top:10px; }
-
-.hidden{
-	display:none;
 }

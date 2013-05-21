@@ -14,16 +14,16 @@
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL) 
  */
 
-class Comments_Controller extends Admin_Controller {
-	
-	public function __construct()
+class Comments_Controller extends Admin_Controller
+{
+    function __construct()
     {
         parent::__construct();
     
         $this->template->this_page = 'reports';
         
         // If user doesn't have access, redirect to dashboard
-        if ( ! $this->auth->has_permission("reports_comments"))
+        if ( ! admin::permissions($this->user, "reports_comments"))
         {
             url::redirect(url::site().'admin/dashboard');
         }
@@ -36,7 +36,7 @@ class Comments_Controller extends Admin_Controller {
     */
     function index($page = 1)
     {
-        $this->template->content = new View('admin/comments/main');
+        $this->template->content = new View('admin/comments');
         $this->template->content->title = Kohana::lang('ui_admin.comments');
         
         
@@ -97,7 +97,7 @@ class Comments_Controller extends Admin_Controller {
                             $update->save();
                         }
                     }
-                    $form_action = utf8::strtoupper(Kohana::lang('ui_admin.approved'));
+                    $form_action = strtoupper(Kohana::lang('ui_admin.approved'));
                 }
                 elseif ($post->action == 'u')   
                 { // Unapprove Action
@@ -109,7 +109,7 @@ class Comments_Controller extends Admin_Controller {
                             $update->save();
                         }
                     }
-                    $form_action = utf8::strtoupper(Kohana::lang('ui_admin.unapproved'));
+                    $form_action = strtoupper(Kohana::lang('ui_admin.unapproved'));
                 }
                 elseif ($post->action == 's')   
                 { // Spam Action
@@ -122,7 +122,7 @@ class Comments_Controller extends Admin_Controller {
                             $update->save();
                         }
                     }
-                    $form_action = utf8::strtoupper(Kohana::lang('ui_admin.marked_as_spam'));
+                    $form_action = strtoupper(Kohana::lang('ui_admin.marked_as_spam'));
                 }
                 elseif ($post->action == 'n')   
                 { // Spam Action
@@ -135,7 +135,7 @@ class Comments_Controller extends Admin_Controller {
                             $update->save();
                         }
                     }
-                    $form_action = utf8::strtoupper(Kohana::lang('ui_admin.marked_as_not_spam'));
+                    $form_action = strtoupper(Kohana::lang('ui_admin.marked_as_not_spam'));
                 }
                 elseif ($post->action == 'd')   // Delete Action
                 {
@@ -186,7 +186,7 @@ class Comments_Controller extends Admin_Controller {
         $this->template->content->status = $status;
         
         // Javascript Header
-        $this->themes->js = new View('admin/comments/comments_js');        
+        $this->template->js = new View('admin/comments_js');        
     }
     
 }

@@ -24,7 +24,7 @@ class Blocks_Controller extends Admin_Controller
 		$this->template->this_page = 'settings';
 		
 		// If user doesn't have access, redirect to dashboard
-		if ( ! $this->auth->has_permission("manage"))
+		if ( ! admin::permissions($this->user, "manage"))
 		{
 			url::redirect(url::site().'admin/dashboard');
 		}
@@ -34,7 +34,7 @@ class Blocks_Controller extends Admin_Controller
 	
 	function index()
 	{
-		$this->template->content = new View('admin/manage/blocks/main');
+		$this->template->content = new View('admin/blocks');
 		$this->template->content->title = Kohana::lang('ui_admin.blocks');
 		
 		// Get Registered Blocks 
@@ -44,7 +44,8 @@ class Blocks_Controller extends Admin_Controller
 		}
 		
 		// Get Active Blocks
-		$active_blocks = Settings_Model::get_setting('blocks');
+		$settings = ORM::factory('settings', 1);
+		$active_blocks = $settings->blocks;
 		$active_blocks = array_filter(explode("|", $active_blocks));
 		
 		// setup and initialize form field names
@@ -80,14 +81,16 @@ class Blocks_Controller extends Admin_Controller
 				if ($post->action == 'a')
 				{
 					array_push($active_blocks, $post->block);
-					Settings_Model::save_setting('blocks', implode("|", $active_blocks));
+					$settings->blocks = implode("|", $active_blocks);
+					$settings->save();
 				}
 				
 				// Deactivate a block
 				elseif ($post->action =='d')
 				{
 					$active_blocks = array_diff($active_blocks, array($post->block));
-					Settings_Model::save_setting('blocks', implode("|", $active_blocks));
+					$settings->blocks = implode("|", $active_blocks);
+					$settings->save();
 				}
 			}
 			else
@@ -111,8 +114,8 @@ class Blocks_Controller extends Admin_Controller
 		$this->template->content->sorted_blocks = $sorted_blocks;
 		
 		// Javascript Header
-		$this->themes->tablerowsort_enabled = TRUE;
-		$this->themes->js = new View('admin/manage/blocks/blocks_js');
+		$this->template->tablerowsort_enabled = TRUE;
+		$this->template->js = new View('admin/blocks_js');
 	}
 	
 	public function sort()
@@ -122,12 +125,12 @@ class Blocks_Controller extends Admin_Controller
 		
 		if ($_POST)
 		{
-			$post = Validation::factory($_POST);
-			$post->add_rules('blocks','required');
-			
-			if ($post->validate())
+			if (isset($_POST['blocks'])
+				AND ! empty($_POST['blocks'])
+				)
 			{
-				$active_blocks = Settings_Model::get_setting('blocks');
+				$settings = ORM::factory('settings', 1);
+				$active_blocks = $settings->blocks;
 				$active_blocks = array_filter(explode("|", $active_blocks));
 				
 				$blocks = array_map('trim', explode(',', $_POST['blocks']));
@@ -140,12 +143,10 @@ class Blocks_Controller extends Admin_Controller
 					}
 				}
 				
-				Settings_Model::save_setting('blocks', implode("|", $block_check));
-				echo 'success';
-				return;
+				$settings = ORM::factory('settings', 1);
+				$settings->blocks = implode("|", $block_check);
+				$settings->save();
 			}
 		}
-		echo 'failure';
-		return;
 	}
 }

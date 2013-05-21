@@ -45,217 +45,9 @@ class actioner {
 	{
 		Event::add('ushahidi_action.report_add', array($this, '_report_add'));
 		Event::add('ushahidi_action.checkin_recorded', array($this, '_checkin_recorded'));
-		Event::add('ushahidi_action.message_twitter_add', array($this, '_message_twitter_add'));
-		Event::add('ushahidi_action.feed_item_add', array($this, '_feed_item_add'));
 	}
 
 	// START ACTION TRIGGER FUNCTIONS
-
-	/**
-	 * Routes twitter messages to the message add action trigger
-	 */
-	public function _message_twitter_add()
-	{
-		$this->_message_add('message_twitter_add');
-	}
-
-	/**
-	 * Perform actions for added messages
-	 */
-	public function _message_add($message_action)
-	{
-		$this->data = Event::$data;
-
-		// Our vars
-		/*
-		$this->data->message; // tweet
-		$this->data->message_date; // tweet datetime
-		$this->data->latitude;
-		$this->data->longitude;
-		*/
-
-		// Grab all action triggers that involve this fired action
-		$actions = $this->_get_actions($message_action);
-
-		// Get out of here as fast as possible if there are no actions.
-		if($actions->count() <= 0) return false;
-
-		foreach ($actions as $action)
-		{
-			// Collect variables for this action
-			$this->action_id = $action->action_id;
-			$trigger = $action->action;
-			$this->qualifiers = unserialize($action->qualifiers);
-			$response = $action->response;
-			$response_vars = unserialize($action->response_vars);
-
-			// If geometry isn't set because we didn't have any geometry to pass, set it as false
-			//   to prevent errors when we need to call the variable later in the script.
-			if( ! isset($this->qualifiers['geometry'])) $this->qualifiers['geometry'] = FALSE;
-
-			// Check if we qualify for performing the response
-
-			// --- Check Location
-
-			// We can only consider location if location is set
-			if ( isset($this->data->latitude) AND $this->data->latitude != NULL
-				AND isset($this->data->longitude) AND $this->data->longitude != NULL)
-			{
-				$point = array('lat' => $this->data->latitude, 'lon' => $this->data->longitude);
-			}
-			else
-			{
-				$point = array('lat'=>FALSE,'lon'=>FALSE);
-			}
-
-			if( ! $this->__check_location($this->qualifiers['location'],$this->qualifiers['geometry'],$point))
-			{
-				// Not the right location
-				continue;
-			}
-			
-			// --- Check author against message from
-
-			if( ! $this->__check_from($this->qualifiers['from'],$this->data->message_from))
-			{
-				// Not the right keyword
-				continue;
-			}
-
-			// --- Check Keywords
-			//     against subject and body. If both fail, then this action doesn't qualify
-
-			if( ! $this->__check_keywords($this->qualifiers['keyword'],$this->data->message) AND
-				! $this->__check_keywords($this->qualifiers['keyword'],$this->data->message_detail)
-				)
-			{
-				// Not the right keyword
-				continue;
-			}
-
-			// --- Check Between Times
-			if( ! $this->__check_between_times(strtotime($this->data->message_date)))
-			{
-				// Not the right time
-				continue;
-			}
-
-			// --- Check Specific Days
-			if( ! $this->__check_specific_days(strtotime($this->data->message_date)))
-			{
-				// Not the right day
-				continue;
-			}
-
-			// --- Begin Response
-
-			// Record that the magic happened
-			$this->__record_log($this->action_id,$this->data->user_id);
-
-			// Qapla! Begin response phase since we passed all of the qualifier tests
-			$this->__perform_response($response,$response_vars);
-		}
-	}
-
-	/**
-	 * Perform actions for added messages
-	 */
-	public function _feed_item_add()
-	{
-		$this->data = Event::$data;
-
-		// Our vars
-		/*
-		$this->data->item_title;
-		$this->data->item_description;
-		$this->data->item_date;
-		$this->data->item_link;
-		$this->data->location->latitude;
-		$this->data->location->longitude;
-		*/
-
-		// Grab all action triggers that involve this fired action
-		$actions = $this->_get_actions('feed_item_add');
-
-		// Get out of here as fast as possible if there are no actions.
-		if($actions->count() <= 0) return false;
-
-		foreach ($actions as $action)
-		{
-			// Collect variables for this action
-			$this->action_id = $action->action_id;
-			$trigger = $action->action;
-			$this->qualifiers = unserialize($action->qualifiers);
-			$response = $action->response;
-			$response_vars = unserialize($action->response_vars);
-
-			// If geometry isn't set because we didn't have any geometry to pass, set it as false
-			//   to prevent errors when we need to call the variable later in the script.
-			if( ! isset($this->qualifiers['geometry'])) $this->qualifiers['geometry'] = FALSE;
-
-			// Check if we qualify for performing the response
-
-			// --- Check Location
-
-			// We can only consider location if location is set
-			if ( isset($this->data->latitude) AND $this->data->latitude != NULL
-				AND isset($this->data->longitude) AND $this->data->longitude != NULL)
-			{
-				$point = array('lat' => $this->data->location->latitude, 'lon' => $this->data->location->longitude);
-			}
-			else
-			{
-				$point = array('lat'=>FALSE,'lon'=>FALSE);
-			}
-
-			if( ! $this->__check_location($this->qualifiers['location'],$this->qualifiers['geometry'],$point))
-			{
-				// Not the right location
-				continue;
-			}
-
-
-			if( ! $this->__check_feed_id($this->qualifiers['feed_id'],$this->data->feed_id))
-			{
-				// Not the right feed
-				continue;
-			}
-			
-			// --- Check Keywords
-			//     against subject and body. If both fail, then this action doesn't qualify
-
-			if( ! $this->__check_keywords($this->qualifiers['keyword'],$this->data->item_description) AND
-				! $this->__check_keywords($this->qualifiers['keyword'],$this->data->item_title)
-				)
-			{
-				// Not the right keyword
-				continue;
-			}
-
-			// --- Check Between Times
-			if( ! $this->__check_between_times(strtotime($this->data->item_date)))
-			{
-				// Not the right time
-				continue;
-			}
-
-			// --- Check Specific Days
-			if( ! $this->__check_specific_days(strtotime($this->data->item_date)))
-			{
-				// Not the right day
-				continue;
-			}
-
-			// --- Begin Response
-
-			// Record that the magic happened
-			$this->__record_log($this->action_id, 0);
-
-			// Qapla! Begin response phase since we passed all of the qualifier tests
-			$this->__perform_response($response, $response_vars);
-		}
-	}
-
 
 	/**
 	 * Perform actions for report_add
@@ -265,7 +57,7 @@ class actioner {
 		$this->data = Event::$data;
 
 		// Grab all action triggers that involve this fired action
-		$actions = $this->_get_actions('report_add');
+		$actions = $this->db->from('actions')->where(array('action' => 'report_add', 'active' => 1))->get();
 
 		// Get out of here as fast as possible if there are no actions.
 		if($actions->count() <= 0) return false;
@@ -350,7 +142,7 @@ class actioner {
 		$this->data = Event::$data;
 
 		// Grab all action triggers that involve this fired action
-		$actions = $this->_get_actions('checkin_recorded');
+		$actions = $this->db->from('actions')->where(array('action' => 'checkin_recorded', 'active' => 1))->get();
 
 		// Get out of here as fast as possible if there are no actions.
 		if($actions->count() <= 0) return false;
@@ -428,28 +220,6 @@ class actioner {
 			return false;
 		}
 		return true;
-	}
-
-	// Checks if feed is global and matches the data passed for feedid
-	public function __check_feed_id($feeds, $feed_check_against)
-	{
-		// Return true if no feeds selected
-		if ($feeds == 0 || count($feeds) == 0) return TRUE;
-		
-		// Make sure feeds is an array
-		if (! is_array($feeds)) $feeds = array($feeds);
-		
-		foreach ($feeds as $feed_id)
-		{
-			if($feed_id == $feed_check_against)
-			{
-				// Feed Match!
-				return TRUE;
-			}
-		}
-
-		// Never matched a category
-		return FALSE;
 	}
 
 	// Checks if the data has any categories in the qualifier set of categories
@@ -569,7 +339,7 @@ class actioner {
 	 *   is passed as an array like array("lon lat","lon lat","lon lat","lon lat",. . .);
 	 *   As far as I know, the polygon can be as complex as you like.
 	 */
-	public function __check_location($location,$m_geometry,$point=FALSE)
+	public function __check_location($location,$m_geometry)
 	{
 
 		if($location == 'specific')
@@ -587,26 +357,10 @@ class actioner {
 				$geometry = str_ireplace('))"}','',$geometry);
 				$polygon = explode(',',(string)$geometry);
 
-				// If no point array passed, fall back to a location_id
+				// Find the lat,lon of the report
 
-				if ( ! isset($point['lat']) OR ! isset($point['lon']) )
-				{
-					$location = ORM::factory('location',$this->data->location_id);
-					$point = $location->longitude.' '.$location->latitude;
-				}
-				else
-				{
-					// As a sanity check, fail this if there is no lat/lon but it's still being passed
-					if ($point['lat'] == FALSE OR $point['lon'] == FALSE)
-					{
-						// Get out, we shouldn't even be considering this data for a location search
-						//   so fail it.
-						return false;
-					}
-
-					// Convert the array to a string the pointInPolygon function will understand
-					$point = $point['lon'].' '.$point['lat'];
-				}
+				$location = ORM::factory('location',$this->data->location_id);
+				$point = $location->longitude.' '.$location->latitude;
 
 				if($pointLocation->pointInPolygon($point, $polygon)){
 					// It's inside the fence!
@@ -641,29 +395,6 @@ class actioner {
 			// If no keywords were set, then you can simply pass this test
 			return TRUE;
 		}
-	}
-
-	/**
-	 * Takes a CSV list of twitter usernames and checks each of them against a string
-	 */
-	public function __check_from($from,$string)
-	{
-		if($from != '')
-		{
-			// Okay, from was defined so lets check to see if the authors match
-			$exploded_author = explode(',',$from);
-			foreach($exploded_author as $author) {
-				// if we found it, get out of the function
-				if(strtolower($string) == strtolower($author)) {
-					return TRUE;
-				}
-			}
-			return FALSE;
-		} else {
-			// If no author was set, then you can simply pass this test
-			return TRUE;
-		}
-		return FALSE;
 	}
 
 	// START COUNT / QUALIFIER / RESPONSE FUNCTIONS
@@ -735,8 +466,6 @@ class actioner {
 				return TRUE;
 			case 'assign_badge':
 				return $this->__response_assign_badge($response_vars);
-			case 'create_report':
-				return $this->__response_create_report($response_vars);
 			default:
 				return FALSE;
 		}
@@ -794,142 +523,6 @@ class actioner {
 	}
 
 	/**
-	 * Create a report and assign it to one or more categories and set verification
-	 */
-	public function __response_create_report($vars)
-	{
-		$categories = array();
-		if( isset($vars['add_category']))
-		{
-			$categories = $vars['add_category'];
-		}
-
-		$verify = 0;
-		if( isset($vars['verify']))
-		{
-			$verify = (int)$vars['verify'];
-		}
-
-		$approve = 0;
-		if( isset($vars['approve']))
-		{
-			$approve = (int)$vars['approve'];
-		}
-
-		// Grab the location_id or create one if we can
-		$location_id = 0;
-		if ( isset($this->data->location_id))
-		{
-			$location_id = $this->data->location_id;
-		}
-		elseif ( isset($this->data->latitude) AND isset($this->data->longitude))
-		{
-			$location_name = map::reverse_geocode($this->data->latitude,$this->data->longitude);
-
-			// In case our location name is too long, chop off the end
-			$location_name = substr_replace($location_name, '', 250);
-
-			$location_data = (object) array('location_name' => $location_name,
-									'latitude' => $this->data->latitude,
-									'longitude' => $this->data->longitude);
-			$location = new Location_Model();
-			reports::save_location($location_data, $location);
-			$location_id = $location->id;
-		}
-
-		// We can only create reports if we have location.
-		if ($location_id == FALSE OR $location_id == 0)
-		{
-			return false;
-		}
-		
-		// Build title
-		
-		
-		// Build title & description
-		// If this is a message
-		if (isset($this->data->message))
-		{
-			$incident_title = $this->data->message;
-			$incident_description = $this->data->message;
-			$incident_date = $this->data->message_date;
-			// If we're got more message detail, make that the description
-			if ( ! empty($message->message_detail))
-			{
-				$incident_description = $this->data->message_detail;
-			}
-		}
-		// If this is a feed item
-		elseif (isset($this->data->item_title))
-		{
-			$incident_title = strip_tags(html_entity_decode(html_entity_decode($this->data->item_title, ENT_QUOTES)));
-			$incident_description = strip_tags(
-				// @todo place with real html sanitizing
-				str_ireplace(array('<p>','</p>','<br>','<br />','<br/>'), "\n", html_entity_decode($this->data->item_description, ENT_QUOTES))
-			);
-			$incident_date = $this->data->item_date;
-		}
-		
-		
-		// Override title from action options
-		if (! empty($vars['report_title']))
-		{
-			$incident_title = $vars['report_title'];
-		}
-
-		// Save Incident
-		$incident = new Incident_Model();
-		$incident->location_id = $location_id;
-		$incident->incident_title = $incident_title;
-		$incident->incident_description = $incident_description;
-		$incident->incident_date = $incident_date;
-		$incident->incident_active = $approve;
-		$incident->incident_verified = $verify;
-		$incident->incident_dateadd = date("Y-m-d H:i:s",time());
-		$incident->save();
-
-		// Conflicted.. do I run report add here? Potential to create a mess with action triggers?
-		//Event::run('ushahidi_action.report_add', $incident);
-		
-		// Save media
-		if (isset($this->data->item_title))
-		{
-			$news = new Media_Model();
-			$news->location_id = $incident->location_id;
-			$news->incident_id = $incident->id;
-			$news->media_type = 4; // News
-			$news->media_link = $this->data->item_link;
-			$news->media_date = $this->data->item_date;
-			$news->save();
-		}
-
-		$incident_id = $incident->id;
-
-		foreach($categories as $category_id)
-		{
-			// Assign Category
-			Incident_Category_Model::assign_category_to_incident($incident_id,$category_id);
-		}
-
-		// Link message with incident?
-		if ( isset($this->data->message) AND isset($this->data->id))
-		{
-			$message = new Message_Model($this->data->id);
-			$message->incident_id = $incident_id;
-			$message->save();
-		}
-		// Link feed item with incident
-		elseif ( isset($this->data->item_title) AND isset($this->data->id))
-		{
-			$item = new Feed_Item_Model($this->data->id);
-			$item->incident_id = $incident_id;
-			$item->save();
-		}
-
-		return TRUE;
-	}
-
-	/**
 	 * Assigns a badge to the triggering user
 	 */
 	public function __response_assign_badge($vars)
@@ -966,14 +559,6 @@ class actioner {
 		$message = $vars['email_body'];
 
 		return email::send($to, $from, $subject, $message, FALSE);
-	}
-
-	/**
-	 *
-	 */
-	public function _get_actions($activity)
-	{
-		return $this->db->from('actions')->where(array('action' => $activity, 'active' => 1))->get();
 	}
 }
 

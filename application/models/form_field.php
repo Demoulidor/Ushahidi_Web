@@ -56,18 +56,6 @@ class Form_Field_Model extends ORM {
 		// Get the field type
 		$array->field_isdate = ($array->field_type == 3)? 1 : 0;
 		
-		// If this is a new form field, make sure no duplicate name is provided
-		if ($array->field_id == '')
-		{
-			$field_name = ORM::factory('form_field')
-						->where('field_name', $array->field_name)
-						->where('form_id', $array->form_id)
-						->count_all();
-			if ($field_name > 0)
-			{
-				$array->add_error('field_name', 'duplicate');
-			}
-		}
 		// Ensure that checkboxes and radio buttons have a default value
 		if ($array->field_type == 5 OR $array->field_type == 6 OR $array->field_type == 7)
 		{
@@ -118,8 +106,6 @@ class Form_Field_Model extends ORM {
 	{
 		// Delete all responses associated with this field
 		ORM::factory('form_response')->where('form_field_id', $this->id)->delete_all();
-		// Delete all responses associated with this field
-		ORM::factory('form_field_option')->where('form_field_id', $this->id)->delete_all();
 		
 		// Delete the field
 		parent::delete();

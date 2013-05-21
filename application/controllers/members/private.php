@@ -86,7 +86,7 @@ class Private_Controller extends Members_Controller {
 					}
 					
 					$form_saved = TRUE;
-					$form_action = utf8::strtoupper(Kohana::lang('ui_admin.deleted'));
+					$form_action = strtoupper(Kohana::lang('ui_admin.deleted'));
 				}
 				elseif( $post->action == 'r' )			// Mark As Read
 				{
@@ -104,7 +104,7 @@ class Private_Controller extends Members_Controller {
 					}
 					
 					$form_saved = TRUE;
-					$form_action = utf8::strtoupper(Kohana::lang('ui_admin.modified'));
+					$form_action = strtoupper(Kohana::lang('ui_admin.modified'));
 				}
 			}
 			// No! We have validation errors, we need to show the form again, with the errors
@@ -145,7 +145,7 @@ class Private_Controller extends Members_Controller {
 		$this->template->content->total_items = $pagination->total_items;
 		
 		// Javascript Header
-		$this->themes->js = new View('members/private_js');
+		$this->template->js = new View('members/private_js');
 	}
 	
 	/**
@@ -171,8 +171,8 @@ class Private_Controller extends Members_Controller {
 		$form_error = FALSE;
 		$form_saved = FALSE;
 		
-		$form['private_to'] = (isset($_GET['to']) AND ! empty($_GET['to'])) ? html::specialchars($_GET['to']) : "";
-		$form['parent_id'] = (isset($_GET['p']) AND ! empty($_GET['p'])) ? html::specialchars($_GET['p']) : "";
+		$form['private_to'] = (isset($_GET['to']) AND ! empty($_GET['to'])) ? $_GET['to'] : "";
+		$form['parent_id'] = (isset($_GET['p']) AND ! empty($_GET['p'])) ? $_GET['p'] : "";
 		
 		// check, has the form been submitted, if so, setup validation
 		if ($_POST)
@@ -258,8 +258,8 @@ class Private_Controller extends Members_Controller {
 		$this->template->content->form_saved = $form_saved;
 		
 		// Javascript Header
-		$this->themes->autocomplete_enabled = TRUE;
-		$this->themes->js = new View('members/private_send_js');
+		$this->template->autocomplete_enabled = TRUE;
+		$this->template->js = new View('members/private_send_js');
 	}
 	
 	/**
@@ -267,17 +267,18 @@ class Private_Controller extends Members_Controller {
 	 */ 
 	public function get_user()
 	{
-		$db = Database::instance();
 		$this->template = "";
 		$this->auto_render = FALSE;
 		
-		$name = (isset($_GET['q'])) ? utf8::strtolower('%'.str_replace(array('%','_'), array('|%','|_'), $_GET['q']).'%') : "";
+		$name = (isset($_GET['q'])) ? strtolower($_GET['q']) : "";
 		
 		if ($name)
 		{
-			$users = $db->query("SELECT * from users where id != :id AND LOWER(name) LIKE :name ESCAPE '|'",
-				array(':id' => $this->user->id, ':name' => $name));
-			
+			$users = ORM::factory("user")
+				->where("id !=".$this->user->id) 
+				->where("LOWER(name) LIKE '%".$name."%'")
+				->find_all();
+				
 			foreach ($users as $user)
 			{
 				echo "$user->name\n";
@@ -297,13 +298,12 @@ class Private_Controller extends Members_Controller {
 	{
 		$account = ORM::factory('user')
 			->where("name", $name)
-			->orwhere("username", $name)
-			->orwhere("email", $name)
 			->where("id !=".$this->user->id)
 			->find();
-
+			
 		if ( ! $account->loaded)
 		{
+			echo "{{{$name}}}";
 			$post->add_error('private_to','exists');
 		}
 	}

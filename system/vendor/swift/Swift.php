@@ -274,7 +274,7 @@ class Swift
     for ($i = 1, $len = count($list); $i < $len; $i++)
     {
       $extension = substr($list[$i], 4);
-      $attributes = explode("[ =]", $extension);
+      $attributes = split("[ =]", $extension);
       $this->connection->setExtension($attributes[0], (isset($attributes[1]) ? array_slice($attributes, 1) : array()));
     }
   }

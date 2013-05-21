@@ -40,23 +40,26 @@
 	 * 
 	 * @param String url-- download URL
 	 */
-    public function download_ushahidi($url) {
-        $http_client = new HttpClient($url,30);
-        $results = $http_client->execute();
+	public function download_ushahidi($url) {
+		$snoopy = new Snoopy();
+		$snoopy->agent = Kohana::lang('libraries.upgrade_title');
+		$snoopy->read_timeout = 30;
+		$snoopy->gzip = false;
+		$snoopy->fetch($url);
 		$this->log[] = "Starting to download the latest ushahidi build...";
 		
-		if ( $results) 
+		if ( $snoopy->status == '200' ) 
 		{
 			$this->log[] = "Download of latest ushahidi went successful.";
 			$this->success = true;		  
-			return $results;
+			return $snoopy->results;
 		} 
 		
 		else 
 		{			
-			$this->errors[] = sprintf(Kohana::lang('libraries.upgrade_failed').": %d", $http_client->get_error_msg());	
+			$this->errors[] = sprintf(Kohana::lang('libraries.upgrade_failed').": %d", $snoopy->status);	
 			$this->success = false;
-			return $results;
+			return $snoopy;
 		}
 			
 	}
@@ -71,7 +74,7 @@
 	 * @return boolean 
 	 */
 	function ftp_recursively($source, $dest, $options=array('folderPermission'=>0775,'filePermission'=>0664))
-	{
+	{		
 		if ( ! $this->ftp_connect() )
 		{
 			$this->success = false;
@@ -504,32 +507,25 @@
 	}
 
 	/**
-	 * Fetch latest ushahidi version from a remote instance then
+	 * Fetch latest ushahidi version from a remote instance then 
 	 * compare it with local instance version number.
 	 */
-	public function _fetch_core_release()
+	public function _fetch_core_release() 
 	{
 		// Current Version
 		$current = urlencode(Kohana::config('settings.ushahidi_version'));
 
 		// Extra Stats
-		$url = urlencode(preg_replace("/^https?:\/\/(.+)$/i","\\1",
+		$url = urlencode(preg_replace("/^https?:\/\/(.+)$/i","\\1", 
 					url::base()));
 		$ip_address = (isset($_SERVER['REMOTE_ADDR'])) ?
 			urlencode($_SERVER['REMOTE_ADDR']) : "";
 
 		$version_url = "http://version.ushahidi.com/2/?v=".$current.
-			"&u=".$url."&ip=".$ip_address;
-
-		// Ignore errors in case file_get_contents can't retrieve url
-		@preg_match('/({.*})/', file_get_contents($version_url), $matches);
-
-		$version_json_string = false;
-		if(isset($matches[0]))
-		{
-			$version_json_string = $matches[0];
-		}
-
+			"&u=".$url."&ip=".$ip_address;		
+		
+		$version_json_string = @file_get_contents($version_url);
+		
 		// If we didn't get anything back...
 		if ( ! $version_json_string )
 		{
@@ -537,99 +533,21 @@
 		}
 
 		$version_details = json_decode($version_json_string);
+		
 		return $version_details;
 	}
-
+	
 	/**
 	 * Log Messages To File
 	 */
 	public function logger($message)
 	{
-		$filter_crlf = array("\n", "\r");
 		$message = date("Y-m-d H:i:s")." : ".$message;
-		$mesg = str_replace($filter_crlf,'',$message);
-		$mesg .= "\n";
+		$message .= "\n";
 		$logfile = DOCROOT."application/logs/upgrade_".$this->session->get('upgrade_session').".txt";
 		$logfile = fopen($logfile, 'a+');
-		fwrite($logfile, $mesg);
+		fwrite($logfile, $message);
 		fclose($logfile);
-	}
-	
-	/**
-	 * Delete files that no longer exist in latest version
-	 **/
-	public function remove_old($file, $base_directory)
-	{
-		if ( ! $this->ftp_connect() )
-		{
-			$this->success = false;
-			return false;
-		}
-		
-		if ( ! $ftp_base_path = $this->ftp_base_path())
-		{
-			$this->success = false;
-			return false;
-		}
-		
-		$this->ftp->chdir($ftp_base_path);
-		
-		$old_files = file($file, FILE_IGNORE_NEW_LINES);
-		foreach ($old_files as $old_file)
-		{
-			$ftp_filename = str_replace(DOCROOT,"",$old_file);
-			
-			// Skip removed config files
-			if (stripos($old_file,'application/config/') !== FALSE) continue;
-			
-			if (is_file($old_file))
-			{
-				// Turn off error reporting temporarily
-				error_reporting(0);
-				$result = $this->ftp->delete($ftp_filename);
-				if ($result)
-				{
-					$this->success = true;
-					$this->logger("Removed ".$old_file);
-					//Turn on error reporting again
-					error_reporting($this->error_level);
-				}
-				else
-				{
-					$this->success = false;
-					$this->logger("** Failed removing ".$old_file);
-					//Turn on error reporting again
-					error_reporting($this->error_level);
-					return false;
-				}
-			}
-			elseif(is_dir($old_file))
-			{
-				error_reporting(0);
-				$result = $this->ftp->mdel($ftp_filename);
-				if ($result)
-				{
-					$this->success = true;
-					$this->logger("Removed ".$old_file);
-					//Turn on error reporting again
-					error_reporting($this->error_level);
-				}
-				else
-				{
-					$this->success = false;
-					$this->logger("** Failed removing ".$old_file);
-					//Turn on error reporting again
-					error_reporting($this->error_level);
-					return false;
-				}
-			}
-			
-		}
-
-		// Remove upgrader removed files list
-		error_reporting(0);
-		$result = $this->ftp->delete('upgrader_removed_files.txt');
-		error_reporting($this->error_level);
-	}
-}
-
+	}	
+ }
+?>

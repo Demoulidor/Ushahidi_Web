@@ -16,6 +16,8 @@
 
  	public function __construct()
  	{
+ 	  
+ 	  
  		$block = array(
  			"classname" => "polaroid_reports_block",
  			"name" => "Polaroid Reports",
@@ -54,5 +56,7 @@
 		
 	}
 }
-
 new polaroid_reports_block;
+ 
+
+	

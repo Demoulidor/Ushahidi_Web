@@ -62,10 +62,7 @@ class Layer_Model extends ORM
 		// Add validation rule for the layer URL if specified
 		if ( ! empty($array->layer_url) AND (empty($array->layer_file) OR empty($array->layer_file_old)))
 		{
-			if (! valid::url($array->layer_url))
-			{
-				$array->add_error('layer_url', 'url');
-			}
+			$array->add_rules('layer_url', 'url');
 		}
 		
 		// Check if both the layer URL and the layer file have been specified

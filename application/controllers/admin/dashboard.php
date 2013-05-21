@@ -22,14 +22,7 @@ class Dashboard_Controller extends Admin_Controller
 
 	public function index()
 	{
-		
-		// Don't show auto-upgrader when disabled.
-		if (Kohana::config('config.enable_auto_upgrader') AND Kohana::config('version.ushahidi_db_version') > Kohana::config('settings.db_version'))
-		{
-			url::redirect('admin/upgrade/database');
-		}
-		
-		$this->template->content = new View('admin/dashboard/main');
+		$this->template->content = new View('admin/dashboard');
 		$this->template->content->title = Kohana::lang('ui_admin.dashboard');
 		$this->template->this_page = 'dashboard';
 
@@ -74,7 +67,7 @@ class Dashboard_Controller extends Admin_Controller
 
 			$total_message_count += $message_count;
 		}
-
+        
 		$this->template->content->message_services = $message_services;
 
 		// Total Messages
@@ -82,11 +75,7 @@ class Dashboard_Controller extends Admin_Controller
 
 
 		// Get reports for display
-		$incidents = ORM::factory('incident')
-					    ->limit(5)
-					    ->orderby('incident_dateadd', 'desc')
-					    ->find_all();
-
+		$incidents = ORM::factory('incident')->limit(5)->orderby('incident_dateadd', 'desc')->find_all();
 		$this->template->content->incidents = $incidents;
 
 		// Get Incoming Media (We'll Use NewsFeeds for now)
@@ -96,40 +85,28 @@ class Dashboard_Controller extends Admin_Controller
 											->find_all();
 
 		// Javascript Header
-		$this->themes->protochart_enabled = TRUE;
-		$this->themes->js = new View('admin/stats/stats_js');
+		$this->template->protochart_enabled = TRUE;
+		$this->template->js = new View('admin/stats_js');
 
 		$this->template->content->failure = '';
 
 		// Build dashboard chart
 
 		// Set the date range (how many days in the past from today?)
-		// Default to all time if not set
-		$range = (!empty($_GET['range']))
-			? $_GET['range']
-			: 0;
+		// Default to one year if invalid or not set
+		$range = 0;
+		if (isset($_GET['range']))
+		{
+			// Sanitize the range parameter
+			$range = $this->input->xss_clean($_GET['range']);
+			$range = (intval($range) > 0)? intval($range) : 0;
+		}
 		
 		$incident_data = Incident_Model::get_number_reports_by_date($range);
 		$data = array('Reports'=>$incident_data);
 		$options = array('xaxis'=>array('mode'=>'"time"'));
 		
-		$this->template->content->report_chart = protochart::chart('report_chart', $data, $options, 
-		    array('Reports'=>'CC0000'), 410, 310);
-		
-		// Render version sync checks if enabled
-		$this->template->content->version_sync = NULL;
-		if (Kohana::config('config.enable_ver_sync_warning') == TRUE)
-		{
-			$this->template->content->version_sync = View::factory('admin/version_sync');
-		}
-		
-		// Render security checks if enabled
-		$this->template->content->security_info = NULL;
-		if (Kohana::config('config.enable_security_info') == TRUE)
-		{
-			$this->template->content->security_info = View::factory('admin/security_info');
-		}
-		
-	}
+		$this->template->content->report_chart = protochart::chart('report_chart',$data,$options,array('Reports'=>'CC0000'),410,310);
+    }
 }
 ?>

@@ -39,7 +39,9 @@ class Private_Func_Api_Object extends Api_Object_Core {
     public function _chk_key($app_key = 0)
     {
         // Is this a valid FrontlineSMS Key?
-        $keycheck = Kohana::confg('settings.frontlinesms_key');
+        $keycheck = ORM::factory('settings', 1)
+            ->where('frontlinesms_key', $app_key)
+            ->find();
 
         if ($keycheck->loaded)
         {

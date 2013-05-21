@@ -102,6 +102,7 @@ class S_Email_Controller extends Controller {
 				
 				$reporter->service_id		= $service->id;
 				$reporter->level_id			= $level->id;
+				$reporter->service_userid	= null;
 				$reporter->service_account	= $message['email']; 
 				$reporter->reporter_first	= $names[0];
 				$reporter->reporter_last	= $last_name;

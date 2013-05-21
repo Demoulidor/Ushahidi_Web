@@ -66,22 +66,22 @@ class admin_Core {
 			if ($user)
 			{
 				// Check permissions for settings panel
-				$main_right_tabs = (Auth::instance()->has_permission('settings', $user))
+				$main_right_tabs = (self::permissions($user, 'settings'))
 					? arr::merge($main_right_tabs, array('settings/site' => Kohana::lang('ui_admin.settings')))
 					: $main_right_tabs;
-
+				
 				// Check permissions for the manage panel
-				$main_right_tabs = (Auth::instance()->has_permission('manage', $user))
+				$main_right_tabs = (self::permissions($user, 'manage'))
 					? arr::merge($main_right_tabs, array('manage' => Kohana::lang('ui_admin.manage')))
 					: $main_right_tabs;
-
+				
 				// Check permissions for users panel
-				$main_right_tabs = (Auth::instance()->has_permission('users', $user))
+				$main_right_tabs = (self::permissions($user, 'users'))
 					? arr::merge($main_right_tabs, array('users' => Kohana::lang('ui_admin.users')))
 					: $main_right_tabs;
 			}
 		}
-
+		
 		return $main_right_tabs;
 	}
 
@@ -123,7 +123,7 @@ class admin_Core {
 		$menu .= ($this_sub_page == "upload") ? Kohana::lang('ui_main.upload_reports') : "<a href=\"".url::base()."admin/reports/upload\">".Kohana::lang('ui_main.upload_reports')."</a>";
 
 		echo $menu;
-
+		
 		// Action::nav_admin_reports - Add items to the admin reports navigation tabs
 		Event::run('ushahidi_action.nav_admin_reports', $this_sub_page);
 	}
@@ -148,9 +148,9 @@ class admin_Core {
 				$menu .= "<a href=\"" . url::site() . "admin/messages/index/".$service->id."\">".$service->service_name."</a>";
 			}
 		}
-
+		
 		echo $menu;
-
+		
 		// Action::nav_admin_messages - Add items to the admin messages navigation tabs
 		Event::run('ushahidi_action.nav_admin_messages', $service_id);
 	}
@@ -181,15 +181,13 @@ class admin_Core {
 			// SSL subtab
 			$menu .= ($this_sub_page == "https") ? Kohana::lang('ui_main.https'):  "<a href=\"".url::site() ."admin/settings/https\">".Kohana::lang('ui_main.https')."</a>";
 		}
-
+		
 		$menu .= ($this_sub_page == "api") ? Kohana::lang('ui_main.api') : "<a href=\"".url::site()."admin/settings/api\">".Kohana::lang('ui_main.api')."</a>";
-
-		$menu .= ($this_sub_page == "facebook") ? "Facebook" : "<a href=\"".url::site()."admin/settings/facebook\">Facebook</a>";
-
-		$menu .= ($this_sub_page == "externalapps") ? Kohana::lang('ui_main.external_apps') : "<a href=\"".url::site()."admin/settings/externalapps\">".Kohana::lang('ui_main.external_apps')."</a>";
-
+		
+		$menu .= ($this_sub_page == "facebook") ? "Facebook" : "<a href=\"".url::site()."admin/settings/facebook\">Facebook</a>";		   
+		
 		echo $menu;
-
+		
 		// Action::nav_admin_settings - Add items to the admin settings navigation tabs
 		Event::run('ushahidi_action.nav_admin_settings', $this_sub_page);
 	}
@@ -205,9 +203,9 @@ class admin_Core {
 		$menu = "";
 		$menu .= ($this_sub_page == "sms") ? Kohana::lang('ui_main.sms') : "<a href=\"".url::base()."admin/settings/sms\">".Kohana::lang('settings.sms.option_1')."</a>";
 		$menu .= ($this_sub_page == "smsglobal") ? Kohana::lang('ui_main.sms') : "<a href=\"".url::base()."admin/settings/smsglobal\">".Kohana::lang('settings.sms.option_2')."</a>";
-
+		
 		echo $menu;
-
+		
 		// Action::nav_admin_settings_sms - Add items to the settings sms  navigation tabs
 		Event::run('ushahidi_action.sub_nav_admin_settings_sms', $this_sub_page);
 	}
@@ -230,6 +228,11 @@ class admin_Core {
 
 		$menu .= ($this_sub_page == "forms") ? Kohana::lang('ui_main.forms') : "<a href=\"".url::site()."admin/manage/forms\">".Kohana::lang('ui_main.forms')."</a>";
 
+		//** Not sure Organizations is necessary any more?
+		//$menu .= ($this_sub_page == "organizations") ? Kohana::lang('ui_main.organizations')."&nbsp;<span>(<a href=\"#add\">Add New</a>)</span>" : "<a href=\"".url::site()."admin/manage/organizations\">".Kohana::lang('ui_main.organizations')."</a>";
+		
+		$menu .= ($this_sub_page == "sharing") ? Kohana::lang('ui_main.sharing') : "<a href=\"".url::site()."admin/manage/sharing\">".Kohana::lang('ui_main.sharing')."</a>";
+
 		$menu .= ($this_sub_page == "pages") ? Kohana::lang('ui_main.pages') : "<a href=\"".url::site()."admin/manage/pages\">".Kohana::lang('ui_main.pages')."</a>";
 
 		$menu .= ($this_sub_page == "feeds") ? Kohana::lang('ui_main.news_feeds') : "<a href=\"".url::site()."admin/manage/feeds\">".Kohana::lang('ui_main.news_feeds')."</a>";
@@ -237,22 +240,20 @@ class admin_Core {
 		$menu .= ($this_sub_page == "layers") ? Kohana::lang('ui_main.layers') : "<a href=\"".url::site()."admin/manage/layers\">".Kohana::lang('ui_main.layers')."</a>";
 
 		$menu .= ($this_sub_page == "scheduler") ? Kohana::lang('ui_main.scheduler') : "<a href=\"".url::site()."admin/manage/scheduler\">".Kohana::lang('ui_main.scheduler')."</a>";
-
+		
 		$menu .= ($this_sub_page == "publiclisting") ? Kohana::lang('ui_admin.public_listing') : "<a href=\"".url::site()."admin/manage/publiclisting\">".Kohana::lang('ui_admin.public_listing')."</a>";
-
+		
 		$menu .= ($this_sub_page == "actions") ? Kohana::lang('ui_admin.actions') : "<a href=\"".url::site()."admin/manage/actions\">".Kohana::lang('ui_admin.actions')."</a>";
-
+		
 		$menu .= ($this_sub_page == "badges") ? Kohana::lang('ui_main.badges') : "<a href=\"".url::site()."admin/manage/badges\">".Kohana::lang('ui_main.badges')."</a>";
 
-		$menu .= ($this_sub_page == "alerts") ? Kohana::lang('ui_admin.alerts') : "<a href=\"".url::site()."admin/manage/alerts\">".Kohana::lang('ui_admin.alerts')."</a>";
-
 		echo $menu;
-
+		
 		// Action::nav_admin_manage - Add items to the admin manage navigation tabs
 		Event::run('ushahidi_action.nav_admin_manage', $this_sub_page);
 	}
-
-
+	
+	
 	/**
 	 * Generate User Sub Tab Menus
 	 * @param string $this_sub_page
@@ -262,41 +263,61 @@ class admin_Core {
 	public static function user_subtabs($this_sub_page = FALSE, $display_roles = FALSE)
 	{
 		$menu = "";
-
+		
 		$menu .= ($this_sub_page == "users") ? Kohana::lang('ui_admin.manage_users') : "<a href=\"".url::site()."admin/users/\">".Kohana::lang('ui_admin.manage_users')."</a>";
-
+		
 		$menu .= ($this_sub_page == "users_edit") ? Kohana::lang('ui_admin.manage_users_edit') : "<a href=\"".url::site()."admin/users/edit/\">".Kohana::lang('ui_admin.manage_users_edit')."</a>";
-
+		
 		// Only display the link for roles where $display_roles = TRUE
 		if ($display_roles)
 		{
 			$menu .= ($this_sub_page == "roles") ? Kohana::lang('ui_admin.manage_roles') : "<a
 			href=\"".url::site()."admin/users/roles/\">".Kohana::lang('ui_admin.manage_roles')."</a>";
 		}
-
+		
 		echo $menu;
-
+		
 		// Action::nav_admin_users - Add items to the admin manage navigation tabs
 		Event::run('ushahidi_action.nav_admin_users', $this_sub_page);
 	}
 	
-	/**
-	 * Legacy permissions check
-	 * @deprecated Use Auth::has_permission() instead.
-	 */
-	public function permissions($user = FALSE, $permission = FALSE)
+	public static function permissions($user = FALSE, $section = FALSE)
 	{
-		Kohana::log('alert', 'admin::permissions() in deprecated and replaced by Auth::has_permission()');
-		return Auth::instance()->has_permission($permission, $user);
+		if ($user AND $section)
+		{
+			$access = FALSE;
+			foreach ($user->roles as $user_role)
+			{
+				if ($user_role->$section == 1)
+				{
+					$access = TRUE;
+				}
+			}
+			
+			return $access;
+		}
+		else
+		{
+			return FALSE;
+		}
 	}
 	
 	/**
-	 * Legacy admin access check
-	 * @deprecated Use Auth::admin_access() instead.
+	 * Generate User Sub Tab Menus
+	 * @param object $user
+	 * @return bool TRUE if has any permission to access anything. FALSE if not (essentially login only level)
 	 */
-	public function admin_access($user = FALSE)
+	public static function admin_access($user = FALSE)
 	{
-		Kohana::log('alert', 'admin::admin_access() in deprecated and replaced by Auth::admin_access()');
-		return Auth::instance()->admin_access($user);
+		if($user !== FALSE){
+			foreach ($user->roles as $user_role)
+			{
+				// If any of the users roles allows them to access anything, put them on the admin page,
+				//	 otherwise send them to the front end.
+				if(Roles_User_Model::role_allow_admin($user_role->id) == TRUE) return TRUE;
+			}
+		}
+		
+		return FALSE;
 	}
 }

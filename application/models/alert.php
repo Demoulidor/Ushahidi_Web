@@ -97,7 +97,8 @@ class Alert_Model extends ORM {
 			->add_rules('alert_email', 'email', 'length[3,64]')
 			->add_rules('alert_lat', 'required', 'between[-90,90]')
 			->add_rules('alert_lon', 'required', 'between[-180,180]')
-			->add_rules('alert_radius','required','in_array[1,5,10,20,50,100]');
+			->add_rules('alert_radius', 'required', 'in_array[1,5,10,20,50,100]')
+			->add_rules('alert_confirmed', 'required', 'in_array[0,1]');
 				
 		// TODO Callbacks to check for duplicate alert subscription - same
 		// subscriber for the same lat/lon
@@ -111,6 +112,16 @@ class Alert_Model extends ORM {
 			$post->add_rules('alert_recipient', 'required');
 		}
 
+		// If deployment is a single country deployment, check that the location mapped is in the default country
+		if ( ! Kohana::config('settings.multi_country'))
+		{
+			$country = Country_Model::get_country_by_name($post->alert_country);
+			if ($country AND $country->id != Kohana::config('settings.default_country'))
+			{
+				$post->add_error('alert_country','single_country');
+				return FALSE;
+			}
+		}
 
 		return parent::validate($post, $save);
 		
@@ -202,10 +213,10 @@ class Alert_Model extends ORM {
 		if ($alerts->loaded)
 		{
 			// Delete all categories linked to the alert
-			ORM::factory('alert_category')->where('alert_id', $alerts->id)->delete_all();
+			ORM::factory('alert_category')->where('alert_id', $alert->id)->delete_all();
 			
 			// Delete the alert
-			$alerts->delete();
+			$alert->delete();
 
 			// Success!
 			return TRUE;

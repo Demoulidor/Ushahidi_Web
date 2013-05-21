@@ -47,7 +47,9 @@ class Locations_Api_Object extends Api_Object_Core {
                 }
                 else
                 {
-                    $this->response_data = $this->_get_locations(array('id' => $this->request['id']));
+                    $this->response_data = $this->_get_locations(array(
+                    	'id = '.$this->request['id']
+                    ));
                 }
             break;
             
@@ -81,12 +83,7 @@ class Locations_Api_Object extends Api_Object_Core {
 	private function _get_locations($where = array())
 	{
 		// Fetch the location items
-		$items = ORM::factory('Location')
-				->select('location_name AS name', 'location.*') // Add extra name field for backwards compat
-				->where($where)
-				->where('location_visible', 1)
-				->limit($this->list_limit)
-				->find_all();
+		$items = Location_Model::get_locations($where, $this->list_limit);
         
 		//No record found.
 		if ($items->count() == 0)
@@ -102,12 +99,8 @@ class Locations_Api_Object extends Api_Object_Core {
 		
 		foreach ($items as $item)
 		{
-			$item = $item->as_array();
-			// Hide variables we don't want publicly exposed
-			unset($item['location_visible']);
-			
 			// Needs different treatment depending on the output
-			if ($this->response_type == 'json' OR $this->response_type == 'jsonp')
+			if ($this->response_type == 'json')
 			{
 				$json_locations[] = array("location" => $item);
 			} 
@@ -129,7 +122,7 @@ class Locations_Api_Object extends Api_Object_Core {
 			"error" => $this->api_service->get_error_msg(0)
 		);
 
-		return ($this->response_type == 'json' OR $this->response_type == 'jsonp') 
+		return ($this->response_type == 'json') 
 			? $this->array_as_json($data)
 			: $this->array_as_xml($data, $this->replar);
 	}

@@ -103,16 +103,14 @@ class Auth_Core {
 	 * @param   string   username to log in
 	 * @param   string   password to check against
 	 * @param   boolean  enable auto-login
-	 * @param   string   email
-	 * @return  bool
+	 * @return  boolean
 	 */
-	public function login($username, $password, $remember = FALSE, $email = FALSE)
+	public function login($username, $password, $remember = FALSE)
 	{
 		if (empty($password))
 			return FALSE;
 
-		// Hash the password only if we are not using RiverID
-		if (is_string($password) AND Kohana::config('riverid.enable') != TRUE)
+		if (is_string($password))
 		{
 			// Get the salt from the stored password
 			$salt = $this->find_salt($this->driver->password($username));
@@ -121,34 +119,7 @@ class Auth_Core {
 			$password = $this->hash_password($password, $salt);
 		}
 
-		return $this->driver->login($username, $password, $remember, $email);
-	}
-
-	/**
-	 * Simply check to see if a password is valid for a user. NOT COMPATIBLE WITH RIVERID.
-	 *
-	 * @param   integer  user id of the user to check
-	 * @param   string   password to check against
-	 * @return  boolean
-	 */
-	public function check_password($user_id, $password)
-	{
-		if (empty($password))
-			return FALSE;
-
-		// Hash the password
-		if (is_string($password))
-		{
-			$user = ORM::factory('user',$user_id);
-
-			// Get the salt from the stored password
-			$salt = $this->find_salt($this->driver->password($user->email));
-
-			// Create a hashed password using the salt from the stored password
-			$password = $this->hash_password($password, $salt);
-		}
-
-		return $this->driver->check_password($user_id, $password);
+		return $this->driver->login($username, $password, $remember);
 	}
 
 	/**

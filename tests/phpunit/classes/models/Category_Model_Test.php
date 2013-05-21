@@ -22,40 +22,21 @@ class Category_Model_Test extends PHPUnit_Framework_TestCase
 	{
 		return array(
 			array(
-				// Valid category data
 				array(
 					'category_title' => 'Test title',
 					'category_description' => 'Test title category',
 					'category_color' => 'f3f3f3',
 					'parent_id' => 0
-				), 
+				), // Valid category data
 				
-				// Invalid category data set 1
 				array(
 					'category_title' => 'Test title',
 					'category_description' => 'Test title category',
 					'category_color' => NULL,
 					'parent_id' => 0
-				), 
+				), // Invalid category data
 				
-				// Invalid category data data set 2 - special parent category
-				array(
-					'category_title' => 'Test title',
-					'category_description' => 'Test title category',
-					'category_color' => 'F3F3F3',
-					'parent_id' => testutils::get_random_id('category', 'WHERE category_trusted = 1')
-				),
-				
-				// Invalid category data set 3 - special subcategory
-				array(
-					'category_title' => 'Edited Cat',
-					'category_description' => 'Editing a category',
-					'category_color' => 'f3f3f3',
-					'parent_id' => testutils::get_random_id('category')
-				),
-
-				// Do not save record when validation succeeds
-				FALSE 
+				FALSE // Do not save record when validation succeeds
 			)
 		);
 	}
@@ -69,25 +50,16 @@ class Category_Model_Test extends PHPUnit_Framework_TestCase
 	 * @param array $invalid Invalid data for the test
 	 * @param array $save Saves the record when validation succeeds
 	 */
-	public function testValidate($valid, $invalid, $invalid2, $specialsub, $save)
+	public function testValidate($valid, $invalid, $save)
 	{
-		// Model instance for the test on a new category
+		// Model instance for the test
 		$category = new Category_Model();
-		
-		// Model instance for the test on an existing special category
-		$special_sub = new Category_Model(testutils::get_random_id('category', 'WHERE category_trusted = 1'));
 		
 		// Valid data test
 		$this->assertEquals(TRUE, $category->validate($valid, $save));
 		
-		// Invalid data test 1
+		// Invalid data test
 		$this->assertEquals(FALSE, $category->validate($invalid, $save));
-		
-		// Invalid data test 2
-		$this->assertEquals(FALSE, $category->validate($invalid2, $save));
-		
-		// Invalid data test 3
-		$this->assertEquals(FALSE , $special_sub->validate($specialsub, $save));
 	}
 	
 	/**

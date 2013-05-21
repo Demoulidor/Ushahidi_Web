@@ -12,52 +12,53 @@ class category_Core {
 	/**
 	 * Displays a single category checkbox.
 	 */
-	private static function display_category_checkbox($category, $selected_categories, $form_field, $enable_parents = FALSE)
+	public static function display_category_checkbox($category, $selected_categories, $form_field, $enable_parents = FALSE)
 	{
 		$html = '';
+
+		$cid = $category->id;
+
+		// Get locale
+		$l = Kohana::config('locale.language.0');
 		
-		$cid = $category['category_id'];
+		$category_title = Category_Lang_Model::category_title($cid, $l);
+
+		//$category_title = $category->category_title;
+		$category_color = $category->category_color;
 
 		// Category is selected.
 		$category_checked = in_array($cid, $selected_categories);
+		
+		// Visible Child Count
+		$vis_child_count = 0;
+		foreach ($category->children as $child)
+		{
+			$child_visible = $child->category_visible;
+			if ($child_visible)
+			{
+				// Increment Visible Child count
+				++$vis_child_count;
+			}
+		}
 
 		$disabled = "";
-		if (!$enable_parents AND count($category['children']) > 0)
+		if (!$enable_parents AND $category->children->count() > 0 AND $vis_child_count >0)
 		{
 			$disabled = " disabled=\"disabled\"";	
 		}
 
-		$html .= "<label>";
 		$html .= form::checkbox($form_field.'[]', $cid, $category_checked, ' class="check-box"'.$disabled);
-		$html .= $category['category_title'];
-		$html .= "</label>";
+		$html .= $category_title;
 
 		return $html;
 	}
 
-	/**
-	 * Display category tree with input checkboxes.
-	 * @deprecated replaced by form_tree()
-	 **/
-	public static function tree($categories, $hide_children, array $selected_categories = array(), $form_field, $columns = 1, $enable_parents = FALSE)
-	{
-		Kohana::log('alert', 'category::tree() in deprecated and replaced by category::form_tree()');
-		return self::form_tree($form_field, $selected_categories, $columns, $enable_parents, ! $hide_children);
-	}
 
 	/**
-	 * Display category tree with input checkboxes for forms
-	 * 
-	 * @param string $form_field form field name
-	 * @param array $selected_categories Categories that should be already selected
-	 * @param int $columns number of columns to display
-	 * @param bool $enable_parents Can parent categoires be select
-	 * @param bool $show_hidden Show hidden categories
+	 * Display category tree with input checkboxes.
 	 */
-	public static function form_tree($form_field, array $selected_categories = array(), $columns = 1, $enable_parents = FALSE, $show_hidden = FALSE)
+	public static function tree($categories, array $selected_categories, $form_field, $columns = 1, $enable_parents = FALSE)
 	{
-		$category_data = self::get_category_tree_data(FALSE, $show_hidden);
-		
 		$html = '';
 
 		// Validate columns
@@ -67,54 +68,60 @@ class category_Core {
 			$columns = 1;
 		}
 
-		$categories_total = count($category_data);
+		$categories_total = $categories->count();
 
 		// Format categories for column display.
-		// Column number
-		$this_col = 1;
-
-		// Maximum number of elements per column
-		$maxper_col = round($categories_total / $columns);
-		
-		// start the first column
-		$html .= "\n".'<ul class="category-column category-column-'.$this_col.'" id="category-column-'.$this_col.'">'."\n";
-
+		$this_col = 1; // column number
+		$maxper_col = round($categories_total/$columns); // Maximum number of elements per column
 		$i = 1;  // Element Count
-		foreach ($category_data as $category)
+		foreach ($categories as $category)
 		{
 
-			// Display parent category.
-			$html .= "\n\t".'<li title="'.$category['category_description'].'">';
-			$html .= "\n\t\t".category::display_category_checkbox($category, $selected_categories, $form_field, $enable_parents)."\n";
-			
-			// Display child categories.
-			if (count($category['children']) > 0)
+			// If this is the first element of a column, start a new UL
+			if ($i == 1)
 			{
-				$html .= "\t\t<ul>";
-				foreach ($category['children'] as $child)
-				{
-					$html .= "\n\t\t\t".'<li title="'.$child['category_description'].'">'."\n";
-					$html .= category::display_category_checkbox($child, $selected_categories, $form_field, $enable_parents);
-					$html .= "\n\t\t\t".'</li>'."\r\n";
-				}
-				$html .= "\t\t".'</ul>'."\r\n";
+				$html .= '<ul id="category-column-'.$this_col.'">';
 			}
+
+			// Display parent category.
+			$html .= '<li>';
+			$html .= category::display_category_checkbox($category, $selected_categories, $form_field, $enable_parents);
 			
-			$html .= "\t</li>\n";
+			// Visible Child Count
+			$vis_child_count = 0;
+			foreach ($category->children as $child)
+			{
+				$child_visible = $child->category_visible;
+				if ($child_visible)
+				{
+					// Increment Visible Child count
+					++$vis_child_count;
+				}
+			}
+			// Display child categories.
+			if ($category->children->count() > 0 AND $vis_child_count > 0)
+			{
+				$html .= '<ul>';
+				foreach ($category->children as $child)
+				{
+					$child_visible = $child->category_visible;
+					if ($child_visible)
+					{
+						$html .= '<li>';
+						$html .= category::display_category_checkbox($child, $selected_categories, $form_field, $enable_parents);
+					}
+				}
+				$html .= '</ul>';
+			}
+			$i++;
 
 			// If this is the last element of a column, close the UL
-			if ( (($i % $maxper_col) == 0 AND $i > 0) OR $i == $categories_total)
+			if ($i > $maxper_col || $i == $categories_total)
 			{
-				$html .= "</ul>\n";
+				$html .= '</ul>';
+				$i = 1;
 				$this_col++;
-				if($i < $categories_total)
-				{
-					$html .= '<ul class="category-column category-column-'.$this_col.'" id="category-column-'.$this_col.'">';
-				}
 			}
-			
-			$i++;
-			
 		}
 
 		return $html;
@@ -127,21 +134,6 @@ class category_Core {
 	 */
 	public static function get_category_tree_view()
 	{
-		$category_data = self::get_category_tree_data(TRUE);
-		
-		// Generate and return the HTML
-		return self::_generate_treeview_html($category_data);
-	}
-	
-	/**
-	 * Get categories as an tree array
-	 * @param bool Get category count?
-	 * @param bool Include hidden categories
-	 * @return array
-	 **/
-	public static function get_category_tree_data($count = FALSE, $include_hidden = FALSE)
-	{
-		
 		// To hold the category data
 		$category_data = array();
 		
@@ -151,96 +143,108 @@ class category_Core {
 		// Database instance
 		$db = new Database();
 		
-		// Fetch the other categories
-		if ($count)
+		// Fetch all the top level parent categories
+		foreach (Category_Model::get_categories() as $category)
 		{
-			$sql = "SELECT c.id, c.parent_id, c.category_title, c.category_color, c.category_image, c.category_image_thumb, COUNT(i.id) report_count "
-				. "FROM ".$table_prefix."category c "
-				. "LEFT JOIN ".$table_prefix."category c_parent ON (c.parent_id = c_parent.id) "
-				. "LEFT JOIN ".$table_prefix."incident_category ic ON (ic.category_id = c.id) "
-				. "LEFT JOIN ".$table_prefix."incident i ON (ic.incident_id = i.id AND i.incident_active = 1 ) "
-				. "WHERE 1=1 "
-				. (!$include_hidden ? "AND c.category_visible = 1 " : "")
-				. (!$include_hidden ? "AND (c_parent.category_visible = 1 OR c.parent_id = 0)" : "") // Parent must be visible, or must be top level
-				. "GROUP BY c.id "
-				. "ORDER BY c.category_position ASC";
-		}
-		else
-		{
-			$sql = "SELECT c.id, c.parent_id, c.category_title, c.category_color, c.category_image, c.category_image_thumb "
-				. "FROM ".$table_prefix."category c "
-				. "LEFT JOIN ".$table_prefix."category c_parent ON (c.parent_id = c_parent.id) "
-				. "WHERE 1=1 "
-				. (!$include_hidden ? "AND c.category_visible = 1 " : "")
-				. (!$include_hidden ? "AND (c_parent.category_visible = 1 OR c.parent_id = 0)" : "") // Parent must be visible, or must be top level
-				. "ORDER BY c.category_position ASC";
+			self::_extend_category_data($category_data, $category);
 		}
 		
-		// Create nested array - all in one pass
+		// NOTES: Emmanuel Kala - Aug 5, 2011
+		// Initialize the report totals for the parent categories just in case
+		// the deployment does not have sub-categories in which case the query
+		// below won't return a result
+		self::_init_parent_category_report_totals($category_data, $table_prefix);
+		
+		// Query to fetch the report totals for the parent categories
+		$sql = "SELECT c2.id,  COUNT(DISTINCT ic.incident_id)  AS report_count "
+			. "FROM ".$table_prefix."category c, ".$table_prefix."category c2, ".$table_prefix."incident_category ic "
+			. "INNER JOIN ".$table_prefix."incident i ON (ic.incident_id = i.id) "
+			. "WHERE (ic.category_id = c.id OR ic.category_id = c2.id) "
+			. "AND c.parent_id = c2.id "
+			. "AND i.incident_active = 1 "
+			. "AND c2.category_visible = 1 "
+			. "AND c.category_visible = 1 "
+			. "AND c2.parent_id = 0 "
+			. "AND c2.category_title != \"Trusted Reports\" "
+			. "GROUP BY c2.id "
+			. "ORDER BY c2.id ASC";
+		
+		// Update the report_count field of each top-level category
+		foreach ($db->query($sql) as $category_total)
+		{
+			// Check if the category exists
+			if (array_key_exists($category_total->id, $category_data))
+			{
+				// Update
+				$category_data[$category_total->id]['report_count'] = $category_total->report_count;
+			}
+		}
+		
+		// Fetch the other categories
+		$sql = "SELECT c.id, c.parent_id, c.category_title, c.category_color, COUNT(c.id) report_count "
+			. "FROM ".$table_prefix."category c "
+			. "INNER JOIN ".$table_prefix."incident_category ic ON (ic.category_id = c.id) "
+			. "INNER JOIN ".$table_prefix."incident i ON (ic.incident_id = i.id) "
+			. "WHERE c.category_visible = 1 "
+			. "AND i.incident_active = 1 "
+			. "GROUP BY c.category_title "
+			. "ORDER BY c.category_title ASC";
+		
+		// Add child categories
 		foreach ($db->query($sql) as $category)
 		{
-			// If we didn't fetch report_count set fake value
-			if (!$count)
-			{
-			$category->report_count = 0;
-			}
+			// Extend the category data array
+			self::_extend_category_data($category_data, $category);
 			
-			// If this is a parent category, just add it to the array
-			if ($category->parent_id == 0)
+			if (array_key_exists($category->parent_id, $category_data))
 			{
-				// save children and report_count if already been created.
-				$children = isset($category_data[$category->id]['children']) ? $category_data[$category->id]['children'] : array();
-				$report_count = isset($category_data[$category->id]['report_count']) ? $category_data[$category->id]['report_count'] : 0;
-				
-				$category_data[$category->id] = array(
-					'category_id' => $category->id,
-					'category_title' => htmlentities(Category_Lang_Model::category_title($category->id), ENT_QUOTES, "UTF-8"),
-					'category_description' => htmlentities(Category_Lang_Model::category_description($category->id), ENT_QUOTES, "UTF-8"),
-					'category_color' => $category->category_color,
-					'category_image' => $category->category_image,
-					'children' => $children,
-					'category_image_thumb' => $category->category_image_thumb,
-					'parent_id' => $category->parent_id,
-					'report_count' => $category->report_count + $report_count
-				);
-			}
-			// If this is a child, add it underneath its parent category
-			else
-			{
-				// If we haven't processed the parent yet, add placeholder parent category
-				if (! array_key_exists($category->parent_id, $category_data))
-				{
-					$category_data[$category->parent_id] = array(
-						'category_id' => $category->parent_id,
-						'category_title' => '',
-						'category_description' => '',
-						'parent_id' => 0,
-						'category_color' => '',
-						'category_image' => '',
-						'category_image_thumb' => '',
-						'children' => array(),
-						'report_count' => 0
-					);
-				}
-				
 				// Add children
 				$category_data[$category->parent_id]['children'][$category->id] = array(
-					'category_id' => $category->id,
-					'category_title' => htmlentities(Category_Lang_Model::category_title($category->id), ENT_QUOTES, "UTF-8"),
-					'category_description' => htmlentities(Category_Lang_Model::category_description($category->id), ENT_QUOTES, "UTF-8"),
+					'category_title' => Category_Lang_Model::category_title($category->id,Kohana::config('locale.language.0')),
 					'parent_id' => $category->parent_id,
 					'category_color' => $category->category_color,
-					'category_image' => $category->category_image,
-					'category_image_thumb' => $category->category_image_thumb,
 					'report_count' => $category->report_count,
 					'children' => array()
 				);
-				// Add to parent report count too
-				$category_data[$category->parent_id]['report_count'] += $category->report_count;
 			}
 		}
+		
+		// Generate and return the HTML
+		return self::_generate_treeview_html($category_data);
+	}
+	
+	/**
+	 * Helper method for adding parent categories to the category data
+	 *
+	 * @param array $array Pointer to the array containing the category data
+	 * @param mixed $category Object Category object to be added tot he array
+	 */
+	private static function _extend_category_data(array & $array, $category)
+	{
+		// Check if the category is a top-level parent category
+		$temp_category = ($category->parent_id == 0) ? $category : ORM::factory('category', $category->parent_id);
 
-		return $category_data;
+		if ($temp_category instanceof Category_Model AND ! $temp_category->loaded)
+			return FALSE;
+
+		// Extend the array
+		if ( ! array_key_exists($temp_category->id, $array))
+		{
+			// Get the report count
+			$report_count = property_exists($temp_category, 'report_count')? $temp_category->report_count : 0;
+			
+			$array[$temp_category->id] = array(
+				'category_title' => Category_Lang_Model::category_title($temp_category->id,Kohana::config('locale.language.0')),
+				'parent_id' => $temp_category->parent_id,
+				'category_color' => $temp_category->category_color,
+				'report_count' => $report_count,
+				'children' => array()
+			);
+
+			return TRUE;
+		}
+
+		return FALSE;
 	}
 	
 	/**
@@ -259,11 +263,9 @@ class category_Core {
 			// Determine the category class
 			$category_class = ($category['parent_id'] > 0)? " class=\"report-listing-category-child\"" : "";
 			
-			$category_image = $category['category_image_thumb'] ? html::image(array('src'=> url::convert_uploaded_to_abs($category['category_image_thumb']), 'style'=>'float:left;padding-right:5px;')) : NULL;
-			
 			$tree_html .= "<li".$category_class.">"
-							. "<a href=\"#\" class=\"cat_selected\" id=\"filter_link_cat_".$id."\" title=\"{$category['category_description']}\">"
-							. "<span class=\"item-swatch\" style=\"background-color: #".$category['category_color']."\">$category_image</span>"
+							. "<a href=\"#\" class=\"cat_selected\" id=\"filter_link_cat_".$id."\">"
+							. "<span class=\"item-swatch\" style=\"background-color: #".$category['category_color']."\">&nbsp;</span>"
 							. "<span class=\"item-title\">".strip_tags($category['category_title'])."</span>"
 							. "<span class=\"item-count\">".$category['report_count']."</span>"
 							. "</a></li>";
@@ -273,5 +275,39 @@ class category_Core {
 		
 		// Return
 		return $tree_html;
+	}
+	
+	/**
+	 * Initializes the report totals for the parent categories
+	 *
+	 * @param array $category_data Array of the parent categories
+	 * @param string $table_prefix Database table prefix
+	 */
+	private static function _init_parent_category_report_totals(array & $category_data, $table_prefix)
+	{
+		// Query to fetch the report totals for the parent categories
+		$sql = "SELECT c.id, COUNT(DISTINCT ic.incident_id) AS report_count "
+			. "FROM ".$table_prefix."category c "
+			. "INNER JOIN ".$table_prefix."incident_category ic ON (ic.category_id = c.id) "
+			. "INNER JOIN ".$table_prefix."incident i ON (ic.incident_id = i.id) "
+			. "WHERE c.category_visible = 1 "
+			. "AND i.incident_active = 1 "
+			. "AND c.parent_id = 0 "
+			. "GROUP BY c.id";
+		
+		// Fetch the records
+		$result = Database::instance()->query($sql);
+		
+		// Set the report totals for each of the parent categorie
+		foreach ($result as $category)
+		{
+			if (array_key_exists($category->id, $category_data))
+			{
+				$category_data[$category->id]['report_count'] = $category->report_count;
+			}
+		}
+		
+		// Garbage collection
+		unset ($sql, $result);
 	}
 }

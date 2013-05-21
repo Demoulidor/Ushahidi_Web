@@ -13,8 +13,7 @@
  * directory of your site. (Same directory as this index.php file)
  *
  */
-if (file_exists('maintenance.php'))
-{
+if(file_exists('maintenance.php')){
 	header("Status: 503 Service Temporarily Unavailable");
 	die(file_get_contents('maintenance.php'));
 }
@@ -68,13 +67,6 @@ $kohana_themes = 'themes';
 $kohana_plugins = 'plugins';
 
 /**
- * Media directory.
- *
- * This path can be absolute or relative to this file.
- */
-$kohana_media = 'media';
-
-/**
  * Test to make sure that Kohana is running on PHP 5.2 or newer. Once you are
  * sure that your environment is compatible with Kohana, you can comment this
  * line out. When running an application on a new server, uncomment this line
@@ -120,10 +112,9 @@ define('THEMEPATH', str_replace('\\', '/', realpath($kohana_themes)).'/');
 define('PLUGINPATH', str_replace('\\', '/', realpath($kohana_plugins)).'/');
 define('MODPATH', str_replace('\\', '/', realpath($kohana_modules)).'/');
 define('SYSPATH', str_replace('\\', '/', realpath($kohana_system)).'/');
-define('MEDIAPATH', str_replace('\\', '/', realpath($kohana_media)).'/');
 
 // Clean up
-unset($kohana_application, $kohana_themes, $kohana_plugins, $kohana_modules, $kohana_system, $kohana_media);
+unset($kohana_application, $kohana_themes, $kohana_plugins, $kohana_modules, $kohana_system);
 
 if ( ! IN_PRODUCTION)
 {
@@ -154,21 +145,6 @@ if ( ! IN_PRODUCTION)
 	}
 }
 
-// 
-// Check if the application has been installed
-// -------------------------------------------
-// This has to be done before bootstrapping the Kohana framework
-// 
-// Does the installer directory exist?
-if (file_exists(DOCROOT.DIRECTORY_SEPARATOR.'installer'))
-{
-	if ( ! file_exists(APPPATH.'config'.DIRECTORY_SEPARATOR.'database.php'))
-	{
-		// Redirect to the installer
-		header("Location: ./installer");
-		exit();
-	}
-}
 
 // Initialize.
 require SYSPATH.'core/Bootstrap'.EXT;

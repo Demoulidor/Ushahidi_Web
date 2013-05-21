@@ -28,24 +28,6 @@ $config['index_page'] = 'index.php';
 $config['enable_auto_upgrader'] = TRUE;
 
 /**
- * The admin panel shows a warning if you upgrade your deployment
- * code but not the database. Setting this to false disabled that
- * warning.
- */
-$config['enable_ver_sync_warning'] = TRUE;
-
-/**
- * The admin panel shows a warning if you haven't changed your 
- * encryption key. Set this to false to disable
- */
-$config['enable_security_info'] = TRUE;
-
-/**
- * Include Google Analytics (if set) on admin panel
- */
-$config['google_analytics_in_admin'] = TRUE;
-
-/**
  * Fake file extension that will be added to all generated URLs. Example: .html
  */
 $config['url_suffix'] = '';
@@ -94,16 +76,9 @@ $config['log_threshold'] = 1;
  */
 $config['log_directory'] = APPPATH.'logs';
 
-if ( ! @is_writable($config["log_directory"]))
-{
+if (@!is_writable($config["log_directory"])) {
 	$config["log_threshold"] = 0;
 }
-
-/**
- * The scheduler removes old logs. Set to false to disable or an int for the
- * number of days to keep old logs.
- */
-$config['log_cleanup_days_old'] = 7;
 
 /**
  * Enable or disable displaying of Kohana error pages. This will not affect
@@ -120,11 +95,6 @@ $config['display_errors'] = TRUE;
 $config['render_stats'] = TRUE;
 
 /**
- * Enable profiler
- */
-$config['enable_profiler'] = FALSE;
-
-/**
  * Turn MHI on or off. This is an advanced feature that will drastically alter
  * the way your instance works. Please read documentation before proceeding.
  *
@@ -133,34 +103,10 @@ $config['enable_profiler'] = FALSE;
 $config['enable_mhi'] = FALSE;
 
 /**
- * Allow members to sign in with OpenID providers, excluding RiverID
- */
-$config['allow_openid'] = FALSE;
-
-/**
  * Filename prefixed used to determine extensions. For example, an
  * extension to the Controller class would be named MY_Controller.php.
  */
 $config['extension_prefix'] = 'MY_';
-
-/**
- * Check if we should launch the installer or not
- */
-$config['installer_check'] = TRUE;
-
-/**
- * Output scheduler JS in footer
- */
-$config['output_scheduler_js'] = TRUE;
-
-/**
- * Protocol to use for loading external requests
- * 
- * This is used for requests from PHP to external APIs that offer
- * both http and https. Normally this should default to 'https'
- * but some countries/firewalls block https requests so its a setting.
- */
-$config['external_site_protocol'] = 'https';
 
 /**
  * Additional resource paths, or "modules". Each path can either be absolute
@@ -169,10 +115,9 @@ $config['external_site_protocol'] = 'https';
  */
 $config['modules'] = array
 (
-	MODPATH.'auth',         // Authentication
-	MODPATH.'csrf',         // CSRF Handling
+	MODPATH.'auth',      // Authentication
 	// MODPATH.'forge',     // Form generation
-	// MODPATH.'formation', // Form generation
+	// MODPATH.'formation',     // Form generation
 	// MODPATH.'kodoc',     // Self-generating documentation
 	// MODPATH.'media',     // Media caching and compression
 	// MODPATH.'archive',   // Archive utility

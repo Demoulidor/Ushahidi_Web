@@ -21,7 +21,7 @@ class Api_Controller extends Admin_Controller {
         parent::__construct();
         
         $this->template->this_page = 'settings';
-        if ( ! $this->auth->has_permission("manage"))
+        if ( ! admin::permissions($this->user, "manage"))
         {
             url::redirect(url::site().'admin/dashboard');
         }
@@ -32,7 +32,7 @@ class Api_Controller extends Admin_Controller {
      */
     public function index()
     {
-        $this->template->content = new View('admin/settings/api/main');
+        $this->template->content = new View('admin/api');
 
         // Set up and initialize form field names
         $form = array
@@ -149,7 +149,7 @@ class Api_Controller extends Admin_Controller {
         );
         
         // Javascript header
-        $this->themes->js = new View('admin/settings/api/api_js');
+        $this->template->js = new View('admin/api_js');
     }
     
     /**
@@ -157,7 +157,7 @@ class Api_Controller extends Admin_Controller {
      */
     public function log()
     {
-        $this->template->content = new View('admin/settings/api/logs');
+        $this->template->content = new View('admin/apilogs');
         $this->template->content->this_page='apilogs';
         $this->template->content->title = Kohana::lang('ui_main.api_logs');
         
@@ -246,7 +246,7 @@ class Api_Controller extends Admin_Controller {
                 FROM '.$this->table_prefix.'api_log al
                 LEFT JOIN '.$this->table_prefix.'api_banned AS ab ON (ab.banned_ipaddress = al.api_ipaddress)
                 ORDER BY al.api_date DESC
-                LIMIT ?, ?', $pagination->sql_offset, $this->items_per_page
+                LIMIT ' . $pagination->sql_offset. ', '.$this->items_per_page
             );
         
         /*    
@@ -267,15 +267,15 @@ class Api_Controller extends Admin_Controller {
         $this->template->content->pagination = $pagination;
         
         // Javascript header
-        $this->themes->js = new View('admin/settings/api/logs_js');
+        $this->template->js = new View('admin/apilogs_js');
     }
     
     /**
      * Displays the list of IP addresses that have been banned from access the API
      */
-    public function banned()
+    public function apibanned()
     {
-        $this->template->content = new View('admin/settings/api/banned');
+        $this->template->content = new View('admin/api_banned');
         $this->template->content->this_page = 'apibanned';
         $this->template->content->title = Kohana::lang('ui_main.api_banned');
         
@@ -349,6 +349,6 @@ class Api_Controller extends Admin_Controller {
         $this->template->content->pagination = $pagination;
         
         // Javascript header
-        $this->themes->js = new View('admin/settings/api/banned_js');
+        $this->template->js = new View('admin/api_banned_js');
     }
 }

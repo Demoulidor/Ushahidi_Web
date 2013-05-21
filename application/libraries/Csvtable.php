@@ -31,7 +31,7 @@ class Csvtable_Core {
 			$colnum = 0;
 			foreach($fields as $field)
 			{
-				$this->colnames[utf8::strtoupper($field)] = $colnum;
+				$this->colnames[$field] = $colnum;
 				$colnum++;
 			}
 		}		

@@ -90,35 +90,31 @@ class Countries_Api_Object extends Api_Object_Core {
     /**
      * Fetch all countries
      *
-     * @param array where - array to pass to query builder
-     * @param integer limit - number of results to return
+     * @param string where - the where clause for sql
+     * @param string limit - the limit number
+     * @param string response_type - XML or JSON
      *
      * @return string 
      */
-    private function _get_countries($where = array(), $limit = FALSE)
+    private function _get_countries($where = '', $limit = '')
     {
 
         // Fetch countries
-				$items = ORM::factory('Country')
-						->select('country as name', 'country.*')
-						->where($where)
-						->orderby('id','DESC');
-				
-				if ($limit)
-					$items->limit($limit);
-				
-				$items = $items->find_all();
-				
+        $this->query = "SELECT id, iso, country as `name`, capital
+            FROM `".$this->table_prefix."country` $where $limit";
+
+        $items = $this->db->query($this->query);
+        
         // Set the record count
-        $this->record_count = count($items);
+        $this->record_count = $items->count();
         
         $i = 0;
 
         $json_countries = array();
         $ret_json_or_xml = '';
         
-				//No record found.
-        if ($this->record_count == 0)
+        //No record found.
+        if ($items->count() == 0)
         {
             return $this->response(4);
         }
@@ -127,14 +123,14 @@ class Countries_Api_Object extends Api_Object_Core {
         {
 
             // Needs different treatment depending on the output
-            if ($this->response_type == 'json' OR $this->response_type == 'jsonp')
+            if ($this->response_type == 'json')
             {
-                $json_countries[] = array("country" => $item->as_array());
+                $json_countries[] = array("country" => $item);
             } 
             else 
             {
                 $json_countries['country'.$i] = array(
-                        "country" => $item->as_array());
+                        "country" => $item);
 
                 $this->replar[] = 'country'.$i;
             }
@@ -151,7 +147,7 @@ class Countries_Api_Object extends Api_Object_Core {
                 "error" => $this->api_service->get_error_msg(0)
         );
         
-        if ($this->response_type == 'json' OR $this->response_type == 'jsonp')
+        if ($this->response_type == 'json')
         {
             $ret_json_or_xml = $this->array_as_json($data);
         } 
@@ -172,7 +168,8 @@ class Countries_Api_Object extends Api_Object_Core {
      */
     private function _get_countries_by_all()
     {
-        return $this->_get_countries();
+        $where = "ORDER by id DESC "; 
+        return $this->_get_countries($where);
     }
 
     /**
@@ -183,9 +180,11 @@ class Countries_Api_Object extends Api_Object_Core {
      */
     private function _get_country_by_name($name)
     {
-				$where = array('country' => $name);
+        $where = "\n WHERE country = '$name' ";
+        $where .= "ORDER by id DESC";
+        $limit = "\nLIMIT 0, $this->list_limit";
         
-        return $this->_get_countries($where, $this->list_limit);
+        return $this->_get_countries($where, $limit);
     }
 
     /**
@@ -196,9 +195,11 @@ class Countries_Api_Object extends Api_Object_Core {
      */
     private function _get_country_by_id($id)
     {
-        $where = array('id' => $id);
+        $where = "\n WHERE id=$id ";
+        $where .= "ORDER by id DESC";
+        $limit = "\nLIMIT 0, $this->list_limit";
         
-        return $this->_get_countries($where, $this->list_limit);
+        return $this->_get_countries($where, $limit);
     }
 
     /**
@@ -208,8 +209,11 @@ class Countries_Api_Object extends Api_Object_Core {
      */
     private function _get_country_by_iso($iso)
     {
-        $where = array('iso' => $iso);
-        return $this->_get_countries($where, $this->list_limit);
+        $where = "\n WHERE iso='$iso' ";
+        $where .= "ORDER by id DESC";
+        $limit = "\nLIMIT 0, $this->list_limit";
+        return $this->_get_countries($where, $limit);
     }
 }
 
+?>

@@ -29,11 +29,11 @@ class Profile_Controller extends Main_Controller {
 		$this->is_cachable = TRUE;
 
 		$this->template->header->this_page = 'profile';
-		$this->template->content = new View('profile/main');
+		$this->template->content = new View('profile_browse');
 
 		$this->template->content->users = User_Model::get_public_users();
 
-		$this->template->header->page_title .= Kohana::lang('ui_main.browse_profiles').Kohana::config('settings.title_delimiter');
+		$this->template->header->header_block = $this->themes->header_block();
 	}
 
 	/**
@@ -46,7 +46,7 @@ class Profile_Controller extends Main_Controller {
 
 		$this->template->header->this_page = 'profile';
 
-		// Check if we are looking for a user. Argument must be set to continue.
+		// Check if we are looking for a user
 		if( ! isset(Router::$arguments[0]))
 		{
 			url::redirect('profile');
@@ -54,18 +54,12 @@ class Profile_Controller extends Main_Controller {
 
 		$username = Router::$arguments[0];
 
-		// We won't allow profiles to be public if the username is an email address
-		if (valid::email($username))
-		{
-			url::redirect('profile');
-		}
-
 		$user = User_Model::get_user_by_username($username);
 
 		// We only want to show public profiles here
 		if($user->public_profile == 1)
 		{
-			$this->template->content = new View('profile/user');
+			$this->template->content = new View('profile');
 
 			$this->template->content->user = $user;
 
@@ -100,7 +94,7 @@ class Profile_Controller extends Main_Controller {
 			url::redirect('profile');
 		}
 
-		$this->template->header->page_title .= $user->name.Kohana::config('settings.title_delimiter');
+		$this->template->header->header_block = $this->themes->header_block();
 	}
 
 } // End Profile

@@ -15,17 +15,13 @@ class members_Core {
 	 */
 	public static function main_tabs()
 	{
-		$tabs =  array(
+		return array(
 			'dashboard' => Kohana::lang('ui_admin.dashboard'),
 			'reports' => Kohana::lang('ui_admin.my_reports'),
 			'checkins' => Kohana::lang('ui_admin.my_checkins'),
 			'alerts' => Kohana::lang('ui_admin.my_alerts'),
 			'private' => Kohana::lang('ui_admin.private_messages')
 		);
-		
-		Event::run('ushahidi_action.nav_members_main_top', $tabs);
-		
-		return $tabs;
 	}
 	
 	/**
@@ -114,7 +110,7 @@ class members_Core {
 	 */
 	public function gravatar($email, $s = 80, $d = 'mm', $r = 'g', $img = FALSE, $atts = array())
 	{
-		$url = Kohana::config('core.site_protocol').'://secure.gravatar.com/avatar/'
+		$url = 'https://secure.gravatar.com/avatar/'
 			. md5(strtolower(trim( $email)))
 			. "?s=$s&d=$d&r=$r";
 			

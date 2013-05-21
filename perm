@@ -1,0 +1,8 @@
+#!/bin/bash
+
+chmod 777 .htaccess
+chmod 777 application/config
+chmod 777 application/config/config.php
+chmod 777 application/cache
+chmod 777 application/logs
+chmod 777 media/uploads

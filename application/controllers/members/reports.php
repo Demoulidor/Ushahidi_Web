@@ -16,7 +16,7 @@
 
 class Reports_Controller extends Members_Controller {
 	
-	public function __construct()
+	function __construct()
 	{
 		parent::__construct();
 
@@ -28,13 +28,13 @@ class Reports_Controller extends Members_Controller {
 	* Lists the reports.
 	* @param int $page
 	*/
-	public function index($page = 1)
+	function index($page = 1)
 	{
 		$this->template->content = new View('members/reports');
 		$this->template->content->title = Kohana::lang('ui_admin.reports');
 
 
-		if ( ! empty($_GET['status']))
+		if (!empty($_GET['status']))
 		{
 			$status = $_GET['status'];
 
@@ -61,7 +61,8 @@ class Reports_Controller extends Members_Controller {
 		// Get Search Keywords (If Any)
 		if (isset($_GET['k']))
 		{
-			// Brute force input sanitization
+			//	Brute force input sanitization
+			
 			// Phase 1 - Strip the search string of all non-word characters 
 			$keyword_raw = preg_replace('/[^\w+]\w*/', '', $_GET['k']);
 			
@@ -79,7 +80,7 @@ class Reports_Controller extends Members_Controller {
 			$keyword_raw = "";
 		}
 
-		// Check, has the form been submitted?
+		// check, has the form been submitted?
 		$form_error = FALSE;
 		$form_saved = FALSE;
 		$form_action = "";
@@ -98,10 +99,9 @@ class Reports_Controller extends Members_Controller {
 
 			if ($post->validate())
 			{
-				// Delete Action
-				if ($post->action == 'd')	
+				if ($post->action == 'd')	//Delete Action
 				{
-					foreach ($post->incident_id as $item)
+					foreach($post->incident_id as $item)
 					{
 						$update = ORM::factory('incident')
 							->where('user_id', $this->user->id)
@@ -122,8 +122,7 @@ class Reports_Controller extends Members_Controller {
 							ORM::factory('incident_lang')->where('incident_id',$incident_id)->delete_all();
 
 							// Delete Photos From Directory
-							foreach (ORM::factory('media')->where('incident_id',$incident_id)->where('media_type', 1) as $photo) 
-							{
+							foreach (ORM::factory('media')->where('incident_id',$incident_id)->where('media_type', 1) as $photo) {
 								deletePhoto($photo->id);
 							}
 
@@ -148,7 +147,7 @@ class Reports_Controller extends Members_Controller {
 							Event::run('ushahidi_action.report_delete', $update);
 						}
 					}
-					$form_action = utf8::strtoupper(Kohana::lang('ui_admin.deleted'));
+					$form_action = strtoupper(Kohana::lang('ui_admin.deleted'));
 				}
 				$form_saved = TRUE;
 			}
@@ -162,7 +161,7 @@ class Reports_Controller extends Members_Controller {
 		// Pagination
 		$pagination = new Pagination(array(
 			'query_string'	 => 'page',
-			'items_per_page' => intval(Kohana::config('settings.items_per_page_admin')),
+			'items_per_page' => (int) Kohana::config('settings.items_per_page_admin'),
 			'total_items'	 => ORM::factory('incident')
 				->join('location', 'incident.location_id', 'location.id','INNER')
 				->where($filter)
@@ -184,8 +183,8 @@ class Reports_Controller extends Members_Controller {
 			$location_ids[] = $incident->location_id;
 		}
 		
-		// Check if location_ids is not empty
-		if (count($location_ids ) > 0 ) 
+		//check if location_ids is not empty
+		if( count($location_ids ) > 0 ) 
 		{
 			$locations_result = ORM::factory('location')->in('id',implode(',',$location_ids))->find_all();
 			$locations = array();
@@ -203,7 +202,7 @@ class Reports_Controller extends Members_Controller {
 		$this->template->content->locations = $locations;
 		$this->template->content->country_ids = $country_ids;
 
-		// GET countries
+		//GET countries
 		$countries = array();
 		foreach (ORM::factory('country')->orderby('country')->find_all() as $country)
 		{
@@ -230,7 +229,7 @@ class Reports_Controller extends Members_Controller {
 		$this->template->content->status = $status;
 
 		// Javascript Header
-		$this->themes->js = new View('admin/reports/reports_js');
+		$this->template->js = new View('admin/reports_js');
 	}
 
 
@@ -246,10 +245,10 @@ class Reports_Controller extends Members_Controller {
 		$this->template->content = new View('members/reports_edit');
 		$this->template->content->title = Kohana::lang('ui_admin.create_report');
 
-		// Setup and initialize form field names
+		// setup and initialize form field names
 		$form = array(
 			'location_id' => '',
-			'form_id' => '1',
+			'form_id' => '',
 			'locale' => '',
 			'incident_title' => '',
 			'incident_description' => '',
@@ -276,8 +275,7 @@ class Reports_Controller extends Members_Controller {
 			'incident_information' => ''
 		);
 
-		// Copy the form as errors, so the errors will be stored with keys 
-		// corresponding to the form field names
+		//	copy the form as errors, so the errors will be stored with keys corresponding to the form field names
 		$errors = $form;
 		$form_error = FALSE;
 		$form_saved = ($saved == 'saved');
@@ -291,13 +289,14 @@ class Reports_Controller extends Members_Controller {
 		$form['incident_hour'] = date('h');
 		$form['incident_minute'] = date('i');
 		$form['incident_ampm'] = date('a');
-		
-		// Initialize custom field array
-		$form_id = $form['form_id'];
-		$form['custom_field'] = customforms::get_custom_form_fields($id, $form_id, TRUE);
+		// initialize custom field array
+		$form['custom_field'] = customforms::get_custom_form_fields($id, '', TRUE);
 
 		// Locale (Language) Array
 		$this->template->content->locale_array = Kohana::config('locale.all_languages');
+
+		// Create Categories
+		$this->template->content->categories =Category_Model::get_categories();
 
 		// Time formatting
 		$this->template->content->hour_array = $this->_hour_array();
@@ -338,7 +337,7 @@ class Reports_Controller extends Members_Controller {
 		
 		
 		// Are we creating this report from a Checkin?
-		if (isset($_GET['cid']) AND ! empty($_GET['cid']) ) {
+		if (isset($_GET['cid']) AND !empty($_GET['cid']) ) {
 
 			$checkin_id = (int) $_GET['cid'];
 			$checkin = ORM::factory('checkin', $checkin_id);
@@ -373,7 +372,7 @@ class Reports_Controller extends Members_Controller {
 		}
 		
 
-		// Check, has the form been submitted, if so, setup validation
+		// check, has the form been submitted, if so, setup validation
 		if ($_POST)
 		{
 			// Instantiate Validation, use $post, so we don't overwrite $_POST fields with our own things
@@ -386,7 +385,7 @@ class Reports_Controller extends Members_Controller {
 				reports::save_location($post, $location);
 
 				// STEP 2: SAVE INCIDENT
-				$incident = new Incident_Model($id);
+				$incident = new Incident_Model();
 				reports::save_report($post, $incident, $location->id);
 
 				// STEP 2b: SAVE INCIDENT GEOMETRIES
@@ -423,8 +422,10 @@ class Reports_Controller extends Members_Controller {
 				}
 
 				// Action::report_add / report_submit_members - Added a New Report
+				//++ Do we need two events for this? Or will one suffice?
+				//Event::run('ushahidi_action.report_add', $incident);
 				Event::run('ushahidi_action.report_submit_members', $post);
-				Event::run('ushahidi_action.report_edit', $incident);
+
 
 				// SAVE AND CLOSE?
 				if ($post->save == 1)
@@ -442,10 +443,10 @@ class Reports_Controller extends Members_Controller {
 			// No! We have validation errors, we need to show the form again, with the errors
 			else
 			{
-				// Repopulate the form fields
+				// repopulate the form fields
 				$form = arr::overwrite($form, $post->as_array());
 
-				// Populate the error fields, if any
+				// populate the error fields, if any
 				$errors = arr::overwrite($errors, $post->errors('report'));
 				$form_error = TRUE;
 			}
@@ -491,8 +492,8 @@ class Reports_Controller extends Members_Controller {
 					$sql = "SELECT AsText(geometry) as geometry, geometry_label, 
 						geometry_comment, geometry_color, geometry_strokewidth 
 						FROM ".Kohana::config('database.default.table_prefix')."geometry 
-						WHERE incident_id = ?";
-					$query = $db->query($sql, $id);
+						WHERE incident_id=".$id;
+					$query = $db->query($sql);
 					foreach ( $query as $item )
 					{
 						$geometry = array(
@@ -552,54 +553,53 @@ class Reports_Controller extends Members_Controller {
 		$this->template->content->form_saved = $form_saved;
 
 		// Retrieve Custom Form Fields Structure
-		$disp_custom_fields = customforms::get_custom_form_fields($id, $form_id, FALSE);
+		$disp_custom_fields = customforms::get_custom_form_fields($id, $form['form_id'], FALSE);
 		$this->template->content->disp_custom_fields = $disp_custom_fields;
 
 		// Retrieve Previous & Next Records
 		$previous = ORM::factory('incident')->where('id < ', $id)->orderby('id','desc')->find();
-		$previous_url = $previous->loaded
-		    ? url::base().'members/reports/edit/'.$previous->id
-		    : url::base().'members/reports/';
+		$previous_url = ($previous->loaded ?
+				url::base().'members/reports/edit/'.$previous->id :
+				url::base().'members/reports/');
 		$next = ORM::factory('incident')->where('id > ', $id)->orderby('id','desc')->find();
-
-		$next_url = $next->loaded
-		    ? url::base().'members/reports/edit/'.$next->id
-		    : url::base().'members/reports/';
+		$next_url = ($next->loaded ?
+				url::base().'members/reports/edit/'.$next->id :
+				url::base().'members/reports/');
 		$this->template->content->previous_url = $previous_url;
 		$this->template->content->next_url = $next_url;
 
 		// Javascript Header
-		$this->themes->map_enabled = TRUE;
-		$this->themes->colorpicker_enabled = TRUE;
-		$this->themes->treeview_enabled = TRUE;
-		$this->themes->json2_enabled = TRUE;
+		$this->template->map_enabled = TRUE;
+		$this->template->colorpicker_enabled = TRUE;
+		$this->template->treeview_enabled = TRUE;
+		$this->template->json2_enabled = TRUE;
 		
-		$this->themes->js = new View('reports/submit_edit_js');
-		$this->themes->js->edit_mode = FALSE;
-		$this->themes->js->default_map = Kohana::config('settings.default_map');
-		$this->themes->js->default_zoom = Kohana::config('settings.default_zoom');
+		$this->template->js = new View('reports_submit_edit_js');
+		$this->template->js->edit_mode = FALSE;
+		$this->template->js->default_map = Kohana::config('settings.default_map');
+		$this->template->js->default_zoom = Kohana::config('settings.default_zoom');
 
-		if ( ! $form['latitude'] OR ! $form['latitude'])
+		if ( ! $form['latitude'] OR !$form['latitude'])
 		{
-			$this->themes->js->latitude = Kohana::config('settings.default_lat');
-			$this->themes->js->longitude = Kohana::config('settings.default_lon');
+			$this->template->js->latitude = Kohana::config('settings.default_lat');
+			$this->template->js->longitude = Kohana::config('settings.default_lon');
 		}
 		else
 		{
-			$this->themes->js->latitude = $form['latitude'];
-			$this->themes->js->longitude = $form['longitude'];
+			$this->template->js->latitude = $form['latitude'];
+			$this->template->js->longitude = $form['longitude'];
 		}
 		
-		$this->themes->js->incident_zoom = $form['incident_zoom'];
-		$this->themes->js->geometries = $form['geometry'];
+		$this->template->js->incident_zoom = $form['incident_zoom'];
+		$this->template->js->geometries = $form['geometry'];
 
 		// Inline Javascript
 		$this->template->content->date_picker_js = $this->_date_picker_js();
 		$this->template->content->color_picker_js = $this->_color_picker_js();
 		
 		// Pack Javascript
-		$myPacker = new javascriptpacker($this->themes->js , 'Normal', FALSE, FALSE);
-		$this->themes->js = $myPacker->pack();
+		$myPacker = new javascriptpacker($this->template->js , 'Normal', FALSE, FALSE);
+		$this->template->js = $myPacker->pack();
 	}
 	
 
@@ -607,14 +607,30 @@ class Reports_Controller extends Members_Controller {
 	* Delete Photo
 	* @param int $id The unique id of the photo to be deleted
 	*/
-	public function deletePhoto ($id)
+	function deletePhoto ( $id )
 	{
 		$this->auto_render = FALSE;
 		$this->template = "";
 
-		if ($id)
+		if ( $id )
 		{
-			Media_Model::delete_photo($id);
+			$photo = ORM::factory('media', $id);
+			$photo_large = $photo->media_link;
+			$photo_thumb = $photo->media_thumb;
+
+			// Delete Files from Directory
+			if ( ! empty($photo_large))
+			{
+				unlink(Kohana::config('upload.directory', TRUE) . $photo_large);
+			}
+			
+			if ( ! empty($photo_thumb))
+			{
+				unlink(Kohana::config('upload.directory', TRUE) . $photo_thumb);
+			}
+
+			// Finally Remove from DB
+			$photo->delete();
 		}
 	}
 
@@ -626,10 +642,12 @@ class Reports_Controller extends Members_Controller {
 	{
 		$incident = ORM::factory('incident', $id);
 
-		if ($id)
+		if ( $id )
 		{
 			$incident = ORM::factory('incident', $id);
+
 			return $incident;
+
 		}
 		return "0";
 	}
@@ -650,6 +668,7 @@ class Reports_Controller extends Members_Controller {
 		{
 			$minute_array[sprintf("%02d", $j)] = sprintf("%02d", $j);	// Add Leading Zero
 		}
+
 		return $minute_array;
 	}
 
@@ -663,12 +682,13 @@ class Reports_Controller extends Members_Controller {
 		for ($i = 0.5; $i <= 8 ; $i += 0.5)
 		{
 			$stroke_width_array["$i"] = $i;
-		}	
+		}
+		
 		return $stroke_width_array;
 	}
 
 	// Javascript functions
-	private function _color_picker_js()
+	 private function _color_picker_js()
 	{
 	 return "<script type=\"text/javascript\">
 				$(document).ready(function() {
@@ -790,6 +810,7 @@ class Reports_Controller extends Members_Controller {
 			}
 			$html .= "</div>";
 		}
+
 		echo json_encode(array("status"=>"success", "response"=>$html));
 	}
 
@@ -800,6 +821,7 @@ class Reports_Controller extends Members_Controller {
 	{
 		$or = '';
 		$where_string = '';
+
 
 		// Stop words that we won't search for
 		// Add words as needed!!
@@ -813,6 +835,7 @@ class Reports_Controller extends Members_Controller {
 		{
 			array_change_key_case($keywords, CASE_LOWER);
 			$i = 0;
+			
 			foreach($keywords as $value)
 			{
 				if (!in_array($value,$stop_words) && !empty($value))
@@ -821,8 +844,7 @@ class Reports_Controller extends Members_Controller {
 					if ($i > 0) {
 						$or = ' OR ';
 					}
-					$where_string = $where_string.$or."incident_title LIKE '%$chunk%' OR incident_description LIKE '%"
-					.$chunk."%' OR location_name LIKE '%$chunk%'";
+					$where_string = $where_string.$or."incident_title LIKE '%$chunk%' OR incident_description LIKE '%$chunk%'  OR location_name LIKE '%$chunk%'";
 					$i++;
 				}
 			}

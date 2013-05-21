@@ -15,7 +15,8 @@
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
  */
 
-class Admin_Controller extends Template_Controller {
+class Admin_Controller extends Template_Controller
+{
 	/**
 	 * Automatically display the views
 	 * @var bool
@@ -64,12 +65,6 @@ class Admin_Controller extends Template_Controller {
 	 */
 	protected $items_per_page;
 
-	/**
-	 * Auth instance for the admin controllers
-	 * @var Auth
-	 */
-	protected $auth;
-
 
 	public function __construct()
 	{
@@ -84,82 +79,67 @@ class Admin_Controller extends Template_Controller {
 		// Load database
 		$this->db = new Database();
 
+		$this->auth = new Auth();
 		$this->session = Session::instance();
-
-		$this->auth = Auth::instance();
-
-		// Themes Helper
-		$this->themes = new Themes();
-		$this->themes->admin = TRUE;
+		$this->auth->auto_login();
 
 		// Admin is not logged in, or this is a member (not admin)
-		if ( ! $this->auth->logged_in('login'))
+		if ( ! $this->auth->logged_in('login') OR $this->auth->logged_in('member'))
 		{
 			url::redirect('login');
 		}
 
+		// Set Table Prefix
+		$this->table_prefix = Kohana::config('database.default.table_prefix');
+
+
+		// Get the no. of items to display setting
+		$this->items_per_page = (int) Kohana::config('settings.items_per_page_admin');
+
+		// Get Session Information
+		$this->user = new User_Model($_SESSION['auth_user']->id);
+
 		// Check if user has the right to see the admin panel
-		if( ! $this->auth->admin_access())
+		if(admin::admin_access($this->user) == FALSE)
 		{
 			// This user isn't allowed in the admin panel
 			url::redirect('/');
 		}
-
-		// Get the authenticated user
-		$this->user = $this->auth->get_user();
-
-		// Set Table Prefix
-		$this->table_prefix = Kohana::config('database.default.table_prefix');
-
-		// Get the no. of items to display setting
-		$this->items_per_page = (int) Kohana::config('settings.items_per_page_admin');
 
 		$this->template->admin_name = $this->user->name;
 
 		// Retrieve Default Settings
 		$this->template->site_name = Kohana::config('settings.site_name');
 		$this->template->mapstraction = Kohana::config('settings.mapstraction');
-		$this->themes->api_url = Kohana::config('settings.api_url');
+		$this->template->api_url = Kohana::config('settings.api_url');
 
 		// Javascript Header
-		$this->themes->map_enabled = FALSE;
-		$this->themes->datepicker_enabled = FALSE;
-		$this->themes->flot_enabled = FALSE;
-		$this->themes->treeview_enabled = FALSE;
-		$this->themes->protochart_enabled = FALSE;
-		$this->themes->colorpicker_enabled = FALSE;
-		$this->themes->editor_enabled = FALSE;
-		$this->themes->tablerowsort_enabled = FALSE;
-		$this->themes->json2_enabled = FALSE;
-		$this->themes->hovertip_enabled = TRUE;
-		$this->themes->slider_enabled = TRUE;
-		$this->themes->js = '';
+		$this->template->map_enabled = FALSE;
+		$this->template->datepicker_enabled = FALSE;
+		$this->template->flot_enabled = FALSE;
+		$this->template->treeview_enabled = FALSE;
+		$this->template->protochart_enabled = FALSE;
+		$this->template->colorpicker_enabled = FALSE;
+		$this->template->editor_enabled = FALSE;
+		$this->template->tablerowsort_enabled = FALSE;
+		$this->template->json2_enabled = FALSE;
+		$this->template->js = '';
 		$this->template->form_error = FALSE;
 
 		// Initialize some variables for raphael impact charts
-		$this->themes->raphael_enabled = FALSE;
-		$this->themes->impact_json = '';
+		$this->template->raphael_enabled = FALSE;
+		$this->template->impact_json = '';
 
 		// Generate main tab navigation list.
 		$this->template->main_tabs = admin::main_tabs();
-
 		// Generate sub navigation list (in default layout, sits on right side).
-		$this->template->main_right_tabs = admin::main_right_tabs($this->user);
+        $this->template->main_right_tabs = admin::main_right_tabs($this->user);
 
 		$this->template->this_page = "";
 
-		// Header Nav
-		$header_nav = new View('header_nav');
-		$this->template->header_nav = $header_nav;
-		$this->template->header_nav->loggedin_user = $this->user;
-		$this->template->header_nav->loggedin_role = $this->user->dashboard();
-		$this->template->header_nav->site_name = Kohana::config('settings.site_name');
-
-		// Language switcher
-		$this->template->languages = $this->themes->languages();
-		
-		Event::add('ushahidi_filter.view_pre_render.admin_layout', array($this, '_pre_render'));
-	}
+		// Load profiler
+		// $profiler = new Profiler;
+    }
 
 	public function index()
 	{
@@ -175,6 +155,7 @@ class Admin_Controller extends Template_Controller {
 	}
 
 
+
     /**
      * Checks version sequence parts
      *
@@ -183,7 +164,8 @@ class Admin_Controller extends Template_Controller {
      *
      * @return boolean
      */
-	private function _new_or_not($release_version=NULL, $version_ushahidi=NULL)
+	private function _new_or_not($release_version=NULL,
+			$version_ushahidi=NULL )
 	{
 		if ($release_version AND $version_ushahidi)
 		{
@@ -195,14 +177,14 @@ class Admin_Controller extends Template_Controller {
 			if (isset($remote_version[0]) AND isset($local_version[0])
 				AND (int) $remote_version[0] > (int) $local_version[0])
 			{
-				return TRUE;
+				return true;
 			}
 
 			// Check second part .. if its the same, move on to next part
 			if (isset($remote_version[1]) AND isset($local_version[1])
 				AND (int) $remote_version[1] > (int) $local_version[1])
 			{
-				return TRUE;
+				return true;
 			}
 
 			// Check third part
@@ -210,28 +192,16 @@ class Admin_Controller extends Template_Controller {
 			{
 				if ( ! isset($local_version[2]))
 				{
-					return TRUE;
+					return true;
 				}
 				elseif( (int) $remote_version[2] > (int) $local_version[2] )
 				{
-					return TRUE;
+					return true;
 				}
 			}
 		}
 
-		return TRUE;
-	}
-	
-	/**
-	 * Trigger themes->admin_requirements() at the last minute
-	 * 
-	 * This is in case features are enabled/disabled
-	 */
-	public function _pre_render()
-	{
-		$this->themes->requirements();
-		$this->template->header_block = $this->themes->header_block();
-		$this->template->footer_block = $this->themes->footer_block();
+		return false;
 	}
 
 

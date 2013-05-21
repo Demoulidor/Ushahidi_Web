@@ -16,7 +16,7 @@
 
 class Alerts_Controller extends Members_Controller {
 	
-	public function __construct()
+	function __construct()
 	{
 		parent::__construct();
 
@@ -81,7 +81,7 @@ class Alerts_Controller extends Members_Controller {
 						$update = ORM::factory('alert')
 							->where('user_id', $this->user->id)
 							->find($item);
-						if ($update->loaded)
+						if ($update->loaded == true)
 						{
 							$alert_id = $update->id;
 							$update->delete();
@@ -90,7 +90,7 @@ class Alerts_Controller extends Members_Controller {
 							ORM::factory('alert_category')->where('alert_id',$alert_id)->delete_all();
 						}
 					}
-					$form_action = utf8::strtoupper(Kohana::lang('ui_admin.deleted'));
+					$form_action = strtoupper(Kohana::lang('ui_admin.deleted'));
 				}
 				$form_saved = TRUE;
 			}
@@ -127,6 +127,7 @@ class Alerts_Controller extends Members_Controller {
 		$this->template->content->total_items = $pagination->total_items;
 		
 		// Javascript Header
-		$this->themes->js = new View('members/alerts_js');
+		$this->template->map_enabled = TRUE;
+		$this->template->js = new View('members/alerts_js');
 	}	
 }

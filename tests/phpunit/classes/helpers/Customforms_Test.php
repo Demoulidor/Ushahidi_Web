@@ -22,10 +22,7 @@ class Customforms_Helper_Test extends PHPUnit_Framework_TestCase {
 		$this->databaseTester = NULL;
 		
 		// Build the PDO datasource name (DSN)
-		$type = Kohana::config('database.default.connection.type');
-		// Quick fix to replace 'mysqli' with 'mysql' since mysqli isn't valid for PDO
-		$type = ($type == 'mysqli') ? 'mysql' : $type;
-		$database_dsn = $type.":"
+		$database_dsn = Kohana::config('database.default.connection.type').":"
 					."dbname=".Kohana::config('database.default.connection.database').";"
 					."host=".Kohana::config('database.default.connection.host');
 		

@@ -50,12 +50,12 @@
 							<h3><?php echo $id ? Kohana::lang('ui_main.edit_report') : Kohana::lang('ui_main.new_report'); ?></h3>
 							<div class="btns" style="float:right;">
 								<ul>
-									<li><a href="#" class="btn_save"><?php echo utf8::strtoupper(Kohana::lang('ui_main.save_report'));?></a></li>
-									<li><a href="#" class="btn_save_close"><?php echo utf8::strtoupper(Kohana::lang('ui_main.save_close'));?></a></li>
-									<li><a href="<?php echo url::base().'members/reports/';?>" class="btns_red"><?php echo utf8::strtoupper(Kohana::lang('ui_main.cancel'));?></a>&nbsp;&nbsp;&nbsp;</li>
+									<li><a href="#" class="btn_save"><?php echo strtoupper(Kohana::lang('ui_main.save_report'));?></a></li>
+									<li><a href="#" class="btn_save_close"><?php echo strtoupper(Kohana::lang('ui_main.save_close'));?></a></li>
+									<li><a href="<?php echo url::base().'members/reports/';?>" class="btns_red"><?php echo strtoupper(Kohana::lang('ui_main.cancel'));?></a>&nbsp;&nbsp;&nbsp;</li>
 									<?php if ($id): ?>
-									<li><a href="<?php echo $previous_url;?>" class="btns_gray">&laquo; <?php echo utf8::strtoupper(Kohana::lang('ui_main.previous'));?></a></li>
-									<li><a href="<?php echo $next_url;?>" class="btns_gray"><?php echo utf8::strtoupper(Kohana::lang('ui_main.next'));?> &raquo;</a></li>
+									<li><a href="<?php echo $previous_url;?>" class="btns_gray">&laquo; <?php echo strtoupper(Kohana::lang('ui_main.previous'));?></a></li>
+									<li><a href="<?php echo $next_url;?>" class="btns_gray"><?php echo strtoupper(Kohana::lang('ui_main.next'));?> &raquo;</a></li>
 									<?php endif; ?>
 								</ul>
 							</div>
@@ -81,7 +81,7 @@
 							</div>
 							<div class="row">
 								<h4><?php echo Kohana::lang('ui_main.description');?> <span><?php echo Kohana::lang('ui_main.include_detail');?>.</span></h4>
-								<?php print form::textarea('incident_description', $form['incident_description'], ' rows="12" cols="40"'); ?>
+								<?php print form::textarea('incident_description', $form['incident_description'], ' rows="12" cols="40"') ?>
 							</div>
 
 							<?php
@@ -90,6 +90,7 @@
 							?>
 
 							<?php if (!($id)): ?>
+								?>
 								<div class="row" id="datetime_default">
 									<h4><a href="#" id="date_toggle" class="new-cat">
 									<?php echo Kohana::lang('ui_main.modify_date');?></a><?php echo Kohana::lang('ui_main.modify_date');?>: 
@@ -135,7 +136,7 @@
 										$selected_categories = $form['incident_category'];
 									}
 									$columns = 2;
-									echo category::form_tree('incident_category', $selected_categories, $columns);
+									echo category::tree($categories, $selected_categories, 'incident_category', $columns);
 								?>
              					</div>
 							</div>
@@ -234,16 +235,16 @@
 								<div id="panel" class="olControlEditingToolbar"></div>
 								<div class="btns" style="float:left;">
 									<ul style="padding:4px;">
-										<li><a href="#" class="btn_del_last"><?php echo utf8::strtoupper(Kohana::lang('ui_main.delete_last'));?></a></li>
-										<li><a href="#" class="btn_del_sel"><?php echo utf8::strtoupper(Kohana::lang('ui_main.delete_selected'));?></a></li>
-										<li><a href="#" class="btn_clear"><?php echo utf8::strtoupper(Kohana::lang('ui_main.clear_map'));?></a></li>
+										<li><a href="#" class="btn_del_last"><?php echo strtoupper(Kohana::lang('ui_main.delete_last'));?></a></li>
+										<li><a href="#" class="btn_del_sel"><?php echo strtoupper(Kohana::lang('ui_main.delete_selected'));?></a></li>
+										<li><a href="#" class="btn_clear"><?php echo strtoupper(Kohana::lang('ui_main.clear_map'));?></a></li>
 									</ul>
 								</div>
 								<div style="clear:both;"></div>
 								<?php print form::input('location_find', '', ' title="'.Kohana::lang('ui_main.location_example').'" class="findtext"'); ?>
 								<div class="btns" style="float:left;">
 									<ul>
-										<li><a href="#" class="btn_find"><?php echo utf8::strtoupper(Kohana::lang('ui_main.find_location'));?></a></li>
+										<li><a href="#" class="btn_find"><?php echo strtoupper(Kohana::lang('ui_main.find_location'));?></a></li>
 									</ul>
 								</div>
 								<div id="find_loading" class="incident-find-loading"></div>
@@ -440,18 +441,51 @@
 									</label>
 								</div>
 							</div>
+							<!-- f-col-bottom-1 -->
+							<div class="f-col-bottom-1">
+								<h4><?php echo Kohana::lang('ui_main.information_evaluation');?></h4>
+								<div class="row">
+									<div class="f-col-bottom-1-col"><?php echo Kohana::lang('ui_main.report_edit_dropdown_1_title');?>:</div>
+									<?php print form::dropdown('incident_source', 
+									array(""=> Kohana::lang('ui_main.report_edit_dropdown_1_default'), 
+									"1"=> Kohana::lang('ui_main.report_edit_dropdown_1_item_1'), 
+									"2"=> Kohana::lang('ui_main.report_edit_dropdown_1_item_2'), 
+									"3"=> Kohana::lang('ui_main.report_edit_dropdown_1_item_3'), 
+									"4"=> Kohana::lang('ui_main.report_edit_dropdown_1_item_4'), 
+									"5"=> Kohana::lang('ui_main.report_edit_dropdown_1_item_5'), 
+									"6"=> Kohana::lang('ui_main.report_edit_dropdown_1_item_6')
+									)
+									, $form['incident_source']) ?>									
+								</div>
+								<div class="row">
+									<div class="f-col-bottom-1-col"><?php echo Kohana::lang('ui_main.report_edit_dropdown_2_title');?>:</div>
+									<?php print form::dropdown(
+										'incident_information', 
+										array(
+											"" => Kohana::lang('ui_main.report_edit_dropdown_1_default'), 
+											"1"=> Kohana::lang('ui_main.report_edit_dropdown_2_item_1'), 
+											"2"=> Kohana::lang('ui_main.report_edit_dropdown_2_item_2'), 
+											"3"=> Kohana::lang('ui_main.report_edit_dropdown_2_item_3'), 
+											"4"=> Kohana::lang('ui_main.report_edit_dropdown_2_item_4'), 
+											"5"=> Kohana::lang('ui_main.report_edit_dropdown_2_item_5'), 
+											"6"=> Kohana::lang('ui_main.report_edit_dropdown_2_item_6')
+										),
+										$form['incident_information']); 
+									?>									
+								</div>								
+							</div>
 							<div style="clear:both;"></div>
 						</div>
 						<div class="btns">
 							<ul>
-								<li><a href="#" class="btn_save"><?php echo utf8::strtoupper(Kohana::lang('ui_main.save_report'));?></a></li>
-								<li><a href="#" class="btn_save_close"><?php echo utf8::strtoupper(Kohana::lang('ui_main.save_close'));?></a></li>
+								<li><a href="#" class="btn_save"><?php echo strtoupper(Kohana::lang('ui_main.save_report'));?></a></li>
+								<li><a href="#" class="btn_save_close"><?php echo strtoupper(Kohana::lang('ui_main.save_close'));?></a></li>
 								<?php if ($id): ?>
-									<li><a href="#" class="btn_delete btns_red"><?php echo utf8::strtoupper(Kohana::lang('ui_main.delete_report')); ?></a></li>
+									<li><a href="#" class="btn_delete btns_red"><?php echo strtoupper(Kohana::lang('ui_main.delete_report')); ?></a></li>
 								<?php endif; ?>
 								<li>
 									<a href="<?php echo url::site().'members/reports/';?>" class="btns_red">
-										<?php echo utf8::strtoupper(Kohana::lang('ui_main.cancel'));?>
+										<?php echo strtoupper(Kohana::lang('ui_main.cancel'));?>
 									</a>
 								</li>
 							</ul>
